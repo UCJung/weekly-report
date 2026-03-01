@@ -16,7 +16,6 @@ import Modal from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/Modal';
 import { WorkItem } from '../api/weekly-report.api';
 
-// 주차 유틸
 function getWeekLabel(date: Date): string {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -159,11 +158,15 @@ export default function MyWeeklyReport() {
 
   return (
     <div>
-      {/* 주차 선택기 */}
-      <div className="bg-white rounded-lg border border-[var(--gray-border)] px-5 py-3 mb-4 flex items-center gap-4">
+      {/* 통합 툴바: 주차 선택 + 상태 + 액션 버튼 */}
+      <div
+        className="bg-white rounded-lg border border-[var(--gray-border)] flex items-center gap-3 mb-4"
+        style={{ padding: '10px 16px' }}
+      >
+        {/* 주차 탐색 */}
         <button
           onClick={() => setCurrentWeek(addWeeks(currentWeek, -1))}
-          className="text-[var(--text-sub)] hover:text-[var(--text)] text-[18px]"
+          className="text-[var(--text-sub)] hover:text-[var(--text)] text-[18px] leading-none"
         >
           ◀
         </button>
@@ -174,14 +177,15 @@ export default function MyWeeklyReport() {
         </div>
         <button
           onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}
-          className="text-[var(--text-sub)] hover:text-[var(--text)] text-[18px]"
+          className="text-[var(--text-sub)] hover:text-[var(--text)] text-[18px] leading-none"
         >
           ▶
         </button>
-      </div>
 
-      {/* 액션 바 */}
-      <div className="flex items-center gap-3 mb-4">
+        {/* 구분선 */}
+        <div className="w-px h-5 bg-[var(--gray-border)]" />
+
+        {/* 제출 상태 Badge */}
         <div className="flex items-center gap-2">
           {report ? (
             <Badge variant={isSubmitted ? 'ok' : 'warn'} dot>
@@ -192,7 +196,9 @@ export default function MyWeeklyReport() {
           )}
           {isSaving && <span className="text-[11px] text-[var(--text-sub)]">저장 중...</span>}
         </div>
-        <div className="ml-auto flex gap-2">
+
+        {/* 액션 버튼 */}
+        <div className="flex gap-2 ml-auto">
           {!report && (
             <Button variant="outline" onClick={handleCreateReport} disabled={createMutation.isPending}>
               주간업무 생성

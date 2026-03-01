@@ -49,7 +49,7 @@ export default function GridCell({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Escape') {
-      setLocalValue(value); // 변경 취소
+      setLocalValue(value);
       onEndEdit();
       e.preventDefault();
     }
@@ -57,7 +57,6 @@ export default function GridCell({
       onOpenExpanded?.();
       e.preventDefault();
     }
-    // Ctrl+Enter → 저장 후 종료
     if (e.key === 'Enter' && e.ctrlKey) {
       onSave(localValue);
       onEndEdit();
@@ -84,8 +83,12 @@ export default function GridCell({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full min-h-[60px] px-2 py-1.5 text-[12px] text-[var(--text)] outline-none resize-none bg-[var(--primary-bg)] border border-[var(--primary)] rounded"
-          style={{ lineHeight: '1.5' }}
+          className="w-full min-h-[52px] px-2 py-1.5 text-[12.5px] text-[var(--text)] resize-none bg-[var(--primary-bg)] border border-[var(--primary)] rounded"
+          style={{
+            outline: '2px solid var(--primary)',
+            outlineOffset: '-2px',
+            lineHeight: '1.5',
+          }}
         />
         {onOpenExpanded && (
           <button
@@ -118,6 +121,9 @@ export default function GridCell({
       }}
       tabIndex={disabled ? -1 : 0}
       role="gridcell"
+      style={{
+        outline: 'none',
+      }}
     >
       {value ? (
         <FormattedText text={value} />

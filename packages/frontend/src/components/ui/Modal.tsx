@@ -28,16 +28,28 @@ export default function Modal({ open, onClose, title, children, footer, size = '
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(1px)' }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={`${width} bg-white rounded-lg shadow-xl flex flex-col max-h-[90vh]`}>
+      <div
+        className={`${width} bg-white flex flex-col max-h-[90vh]`}
+        style={{
+          borderRadius: '10px',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          overflow: 'hidden',
+          animation: 'modalIn 0.2s ease-out',
+        }}
+      >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--gray-border)]">
-            <h2 className="text-[14px] font-semibold text-[var(--text)]">{title}</h2>
+          <div
+            className="flex items-center justify-between border-b border-[var(--gray-border)]"
+            style={{ padding: '16px 20px' }}
+          >
+            <h2 className="text-[14px] font-bold text-[var(--text)]">{title}</h2>
             <button
               onClick={onClose}
               className="text-[var(--text-sub)] hover:text-[var(--text)] text-[18px] leading-none"
@@ -47,10 +59,15 @@ export default function Modal({ open, onClose, title, children, footer, size = '
           </div>
         )}
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        <div className="flex-1 overflow-y-auto" style={{ padding: '20px' }}>
+          {children}
+        </div>
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-[var(--gray-border)]">
+          <div
+            className="flex items-center justify-end gap-2 border-t border-[var(--gray-border)]"
+            style={{ padding: '14px 20px' }}
+          >
             {footer}
           </div>
         )}

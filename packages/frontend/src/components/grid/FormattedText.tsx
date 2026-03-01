@@ -30,7 +30,7 @@ export default function FormattedText({ text, className = '' }: FormattedTextPro
   const lines = text.split('\n');
 
   return (
-    <div className={`text-[12px] leading-relaxed ${className}`}>
+    <div className={`text-[12.5px] leading-relaxed ${className}`}>
       {lines.map((line, idx) => {
         if (!line.trim()) {
           return <div key={idx} className="h-3" />;
@@ -46,13 +46,13 @@ export default function FormattedText({ text, className = '' }: FormattedTextPro
             );
           case 'sub':
             return (
-              <div key={idx} className="pl-3 text-[var(--text)]">
+              <div key={idx} className="pl-2 text-[var(--text)]">
                 • {parsed.content}
               </div>
             );
           case 'detail':
             return (
-              <div key={idx} className="pl-6 text-[var(--text-sub)] text-[11px]">
+              <div key={idx} className="pl-[18px] text-[var(--text-sub)] text-[11.5px]">
                 ㄴ {parsed.content}
               </div>
             );

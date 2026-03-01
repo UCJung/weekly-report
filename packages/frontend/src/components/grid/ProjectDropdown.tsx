@@ -11,6 +11,7 @@ interface ProjectDropdownProps {
 export default function ProjectDropdown({ value, onChange, onClose }: ProjectDropdownProps) {
   const [search, setSearch] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const { data } = useProjects({ status: 'ACTIVE' });
   const projects = data?.data ?? [];
@@ -25,8 +26,23 @@ export default function ProjectDropdown({ value, onChange, onClose }: ProjectDro
     inputRef.current?.focus();
   }, []);
 
+  // click-outside 처리
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
+
   return (
-    <div className="absolute z-50 bg-white border border-[var(--gray-border)] rounded shadow-lg w-[280px] max-h-[240px] overflow-hidden flex flex-col">
+    <div
+      ref={containerRef}
+      className="absolute z-50 bg-white border border-[var(--gray-border)] rounded shadow-lg w-[280px] overflow-hidden flex flex-col"
+      style={{ maxHeight: '240px' }}
+    >
       <div className="p-2 border-b border-[var(--gray-border)]">
         <input
           ref={inputRef}
@@ -34,7 +50,8 @@ export default function ProjectDropdown({ value, onChange, onClose }: ProjectDro
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="프로젝트 검색..."
-          className="w-full h-7 px-2 border border-[var(--gray-border)] rounded text-[11px] outline-none"
+          className="w-full px-2 border border-[var(--gray-border)] rounded outline-none focus:border-[var(--primary)]"
+          style={{ height: '30px', fontSize: '12.5px' }}
           onKeyDown={(e) => {
             if (e.key === 'Escape') onClose();
           }}
@@ -58,7 +75,7 @@ export default function ProjectDropdown({ value, onChange, onClose }: ProjectDro
               onClose();
             }}
           >
-            <div className="font-medium">{project.name}</div>
+            <div className="font-medium text-[12.5px]">{project.name}</div>
             <div className="text-[var(--text-sub)] font-mono text-[10px]">{project.code}</div>
           </button>
         ))}

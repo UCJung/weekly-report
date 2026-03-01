@@ -29,9 +29,9 @@ function addWeeks(weekLabel: string, n: number): string {
 }
 
 const SUMMARY_STATUS_INFO: Record<string, { label: string; variant: 'ok' | 'warn' | 'gray' }> = {
-  SUBMITTED: { label: '제출완료', variant: 'ok' },
-  DRAFT: { label: '임시저장', variant: 'warn' },
-  NOT_STARTED: { label: '미작성', variant: 'gray' },
+  SUBMITTED:   { label: '제출완료', variant: 'ok' },
+  DRAFT:       { label: '임시저장', variant: 'warn' },
+  NOT_STARTED: { label: '미작성',   variant: 'gray' },
 };
 
 interface WorkRow {
@@ -48,7 +48,6 @@ function buildRows(overviews: TeamWeeklyOverview[]): WorkRow[] {
   const rows: WorkRow[] = [];
   for (const overview of overviews) {
     const partName = overview.part.name;
-    // Count total rows for this part
     let partRowSpan = 0;
     for (const entry of overview.members) {
       const cnt = (entry.report?.workItems ?? []).length || 1;
@@ -98,7 +97,6 @@ export default function TeamStatus() {
   const [activeTab, setActiveTab] = useState<'all' | string>('all');
   const [isDownloading, setIsDownloading] = useState(false);
 
-  // teamId: user에 teamId 없으면 '1' 사용 (시드 데이터 기준)
   const teamId = (user as unknown as { teamId?: string })?.teamId ?? '1';
 
   const { data: overviews = [], isLoading } = useQuery({
@@ -120,7 +118,6 @@ export default function TeamStatus() {
     }
   };
 
-  // 파트 필터 적용
   const filteredOverviews =
     activeTab === 'all'
       ? overviews
@@ -128,15 +125,17 @@ export default function TeamStatus() {
 
   const rows = buildRows(filteredOverviews);
 
-  // 작성 현황 집계
   const allMembers = overviews.flatMap((o) => o.members);
   const submittedCount = allMembers.filter((m) => m.report?.status === 'SUBMITTED').length;
   const totalCount = allMembers.length;
 
   return (
     <div>
-      {/* 주차 선택기 */}
-      <div className="bg-white rounded-lg border border-[var(--gray-border)] px-5 py-3 mb-4 flex items-center gap-4">
+      {/* 주차 선택기 툴바 */}
+      <div
+        className="bg-white rounded-lg border border-[var(--gray-border)] flex items-center gap-3 mb-4"
+        style={{ padding: '10px 16px' }}
+      >
         <button
           onClick={() => setCurrentWeek(addWeeks(currentWeek, -1))}
           className="text-[18px] text-[var(--text-sub)] hover:text-[var(--text)]"
@@ -178,17 +177,21 @@ export default function TeamStatus() {
         </div>
       </div>
 
-      {/* 파트 탭 */}
+      {/* 파트 탭 버튼 (height 26px) */}
       {overviews.length > 0 && (
         <div className="flex gap-1 mb-4">
           <button
             onClick={() => setActiveTab('all')}
             className={[
-              'px-4 py-1.5 rounded text-[12px] font-medium transition-colors',
+              'px-4 rounded text-[12px] font-medium transition-colors duration-150',
               activeTab === 'all'
-                ? 'bg-[var(--primary)] text-white'
+                ? 'text-white'
                 : 'bg-white border border-[var(--gray-border)] text-[var(--text-sub)] hover:text-[var(--text)]',
             ].join(' ')}
+            style={{
+              height: '26px',
+              backgroundColor: activeTab === 'all' ? 'var(--primary)' : undefined,
+            }}
           >
             전체
           </button>
@@ -197,11 +200,15 @@ export default function TeamStatus() {
               key={o.part.id}
               onClick={() => setActiveTab(o.part.id)}
               className={[
-                'px-4 py-1.5 rounded text-[12px] font-medium transition-colors',
+                'px-4 rounded text-[12px] font-medium transition-colors duration-150',
                 activeTab === o.part.id
-                  ? 'bg-[var(--primary)] text-white'
+                  ? 'text-white'
                   : 'bg-white border border-[var(--gray-border)] text-[var(--text-sub)] hover:text-[var(--text)]',
               ].join(' ')}
+              style={{
+                height: '26px',
+                backgroundColor: activeTab === o.part.id ? 'var(--primary)' : undefined,
+              }}
             >
               {o.part.name}
             </button>
@@ -211,16 +218,25 @@ export default function TeamStatus() {
 
       {/* 업무 현황 테이블 */}
       <div className="bg-white rounded-lg border border-[var(--gray-border)] overflow-hidden">
-        <table className="w-full text-[12px]">
+        <table className="w-full" style={{ tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '7%' }} />
+            <col style={{ width: '7%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '28%' }} />
+            <col style={{ width: '28%' }} />
+            <col style={{ width: '10%' }} />
+          </colgroup>
           <thead>
             <tr className="bg-[var(--tbl-header)] border-b border-[var(--gray-border)]">
-              <th className="text-left px-3 py-2.5 font-medium text-[var(--text-sub)] w-[7%]">파트</th>
-              <th className="text-left px-3 py-2.5 font-medium text-[var(--text-sub)] w-[7%]">성명</th>
-              <th className="text-left px-3 py-2.5 font-medium text-[var(--text-sub)] w-[12%]">프로젝트</th>
-              <th className="text-left px-3 py-2.5 font-medium text-[var(--text-sub)] w-[8%]">코드</th>
-              <th className="text-left px-3 py-2.5 font-medium text-[var(--text-sub)] w-[28%]">진행업무</th>
-              <th className="text-left px-3 py-2.5 font-medium text-[var(--text-sub)] w-[28%]">예정업무</th>
-              <th className="text-left px-3 py-2.5 font-medium text-[var(--text-sub)] w-[10%]">비고</th>
+              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">파트</th>
+              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">성명</th>
+              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">프로젝트</th>
+              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">코드</th>
+              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">진행업무</th>
+              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">예정업무</th>
+              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">비고</th>
             </tr>
           </thead>
           <tbody>
@@ -249,7 +265,11 @@ export default function TeamStatus() {
                 {row.isFirstInPart && (
                   <td
                     rowSpan={row.partRowSpan}
-                    className="px-3 py-2 align-top font-semibold text-[var(--primary)] border-r border-[var(--gray-border)] bg-[var(--primary-bg)]"
+                    className="px-3 py-[9px] align-top font-semibold text-[12.5px] text-[var(--primary)]"
+                    style={{
+                      borderRight: '1px solid var(--gray-border)',
+                      backgroundColor: 'var(--primary-bg)',
+                    }}
                   >
                     {row.partName}
                   </td>
@@ -257,22 +277,23 @@ export default function TeamStatus() {
                 {row.isFirstInMember && (
                   <td
                     rowSpan={row.memberRowSpan}
-                    className="px-3 py-2 align-top font-medium border-r border-[var(--gray-border)]"
+                    className="px-3 py-[9px] align-top font-medium text-[12.5px]"
+                    style={{ borderRight: '1px solid var(--gray-border)' }}
                   >
                     {row.member.name}
                   </td>
                 )}
-                <td className="px-3 py-2 align-top">{row.item?.project?.name ?? ''}</td>
-                <td className="px-3 py-2 align-top font-mono text-[11px] text-[var(--text-sub)]">
+                <td className="px-3 py-[9px] align-top text-[12.5px]">{row.item?.project?.name ?? ''}</td>
+                <td className="px-3 py-[9px] align-top font-mono text-[11px] text-[var(--text-sub)]">
                   {row.item?.project?.code ?? ''}
                 </td>
-                <td className="px-3 py-2 align-top">
+                <td className="px-3 py-[9px] align-top">
                   <FormattedText text={row.item?.doneWork ?? ''} />
                 </td>
-                <td className="px-3 py-2 align-top">
+                <td className="px-3 py-[9px] align-top">
                   <FormattedText text={row.item?.planWork ?? ''} />
                 </td>
-                <td className="px-3 py-2 align-top text-[11px] text-[var(--text-sub)]">
+                <td className="px-3 py-[9px] align-top text-[11px] text-[var(--text-sub)]">
                   {row.item?.remarks ?? ''}
                 </td>
               </tr>

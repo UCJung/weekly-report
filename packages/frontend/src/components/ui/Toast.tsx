@@ -3,11 +3,11 @@ import { useUiStore } from '../../stores/uiStore';
 
 type ToastType = 'success' | 'warning' | 'info' | 'danger';
 
-const toastStyles: Record<ToastType, { border: string; icon: string; iconColor: string }> = {
-  success: { border: 'border-l-[var(--ok)]', icon: '✓', iconColor: 'text-[var(--ok)]' },
-  warning: { border: 'border-l-[var(--warn)]', icon: '!', iconColor: 'text-[var(--warn)]' },
-  info: { border: 'border-l-[var(--primary)]', icon: 'i', iconColor: 'text-[var(--primary)]' },
-  danger: { border: 'border-l-[var(--danger)]', icon: '✕', iconColor: 'text-[var(--danger)]' },
+const toastStyles: Record<ToastType, { borderColor: string; icon: string; iconColor: string }> = {
+  success: { borderColor: 'var(--ok)',      icon: '✓', iconColor: 'var(--ok)' },
+  warning: { borderColor: 'var(--warn)',    icon: '!', iconColor: 'var(--warn)' },
+  info:    { borderColor: 'var(--primary)', icon: 'i', iconColor: 'var(--primary)' },
+  danger:  { borderColor: 'var(--danger)',  icon: '✕', iconColor: 'var(--danger)' },
 };
 
 interface ToastItemProps {
@@ -22,12 +22,17 @@ function ToastItem({ id, type, message }: ToastItemProps) {
 
   return (
     <div
-      className={[
-        'flex items-start gap-3 bg-white shadow-lg rounded border-l-4 px-4 py-3 min-w-[260px] max-w-[340px]',
-        styles.border,
-      ].join(' ')}
+      className="flex items-start gap-3 bg-white border border-[var(--gray-border)] rounded-lg px-4 py-3 min-w-[280px] max-w-[340px]"
+      style={{
+        borderLeft: `3px solid ${styles.borderColor}`,
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+        animation: 'toastIn 0.25s ease-out',
+      }}
     >
-      <span className={['font-bold text-[13px] flex-shrink-0', styles.iconColor].join(' ')}>
+      <span
+        className="font-bold text-[13px] flex-shrink-0"
+        style={{ color: styles.iconColor }}
+      >
         {styles.icon}
       </span>
       <p className="flex-1 text-[12px] text-[var(--text)]">{message}</p>

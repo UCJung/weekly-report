@@ -157,8 +157,11 @@ export default function PartSummary() {
 
   return (
     <div>
-      {/* 주차 선택기 */}
-      <div className="bg-white rounded-lg border border-[var(--gray-border)] px-5 py-3 mb-4 flex items-center gap-4">
+      {/* 통합 툴바 */}
+      <div
+        className="bg-white rounded-lg border border-[var(--gray-border)] flex items-center gap-3 mb-4"
+        style={{ padding: '10px 16px' }}
+      >
         <button
           onClick={() => setCurrentWeek(addWeeks(currentWeek, -1))}
           className="text-[18px] text-[var(--text-sub)] hover:text-[var(--text)]"
@@ -174,10 +177,10 @@ export default function PartSummary() {
         >
           ▶
         </button>
-      </div>
 
-      {/* 액션 바 */}
-      <div className="flex items-center gap-3 mb-4">
+        <div className="w-px h-5 bg-[var(--gray-border)]" />
+
+        {/* 제출 상태 Badge */}
         <div>
           {summary ? (
             <Badge variant={isSubmitted ? 'ok' : 'warn'} dot>
@@ -187,7 +190,9 @@ export default function PartSummary() {
             <Badge variant="gray">미생성</Badge>
           )}
         </div>
-        <div className="ml-auto flex gap-2">
+
+        {/* 액션 버튼 */}
+        <div className="flex gap-2 ml-auto">
           <Button
             variant="outline"
             onClick={handleAutoMerge}
@@ -223,15 +228,23 @@ export default function PartSummary() {
         {isLoading ? (
           <div className="p-10 text-center text-[var(--text-sub)] text-[13px]">로딩 중...</div>
         ) : (
-          <table className="w-full text-[12px]">
+          <table className="w-full" style={{ tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '30%' }} />
+              <col style={{ width: '30%' }} />
+              <col style={{ width: isSubmitted ? '21%' : '18%' }} />
+              {!isSubmitted && <col style={{ width: '3%' }} />}
+            </colgroup>
             <thead>
               <tr className="bg-[var(--tbl-header)] border-b border-[var(--gray-border)]">
-                <th className="text-left px-3 py-2.5 font-medium text-[var(--text-sub)] w-[15%]">프로젝트명</th>
-                <th className="text-left px-3 py-2.5 font-medium text-[var(--text-sub)] w-[10%]">코드</th>
-                <th className="text-left px-3 py-2.5 font-medium text-[var(--text-sub)] w-[30%]">진행업무</th>
-                <th className="text-left px-3 py-2.5 font-medium text-[var(--text-sub)] w-[30%]">예정업무</th>
-                <th className="text-left px-3 py-2.5 font-medium text-[var(--text-sub)] w-[10%]">비고</th>
-                {!isSubmitted && <th className="w-[5%]"></th>}
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">프로젝트명</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">코드</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">진행업무</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">예정업무</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">비고</th>
+                {!isSubmitted && <th className="px-3 py-[9px]"></th>}
               </tr>
             </thead>
             <tbody>
@@ -256,12 +269,12 @@ export default function PartSummary() {
                   ].join(' ')}
                 >
                   {/* 프로젝트명 */}
-                  <td className="px-2 py-1 align-top">
+                  <td className="px-3 py-[8px] align-top">
                     <div className="relative">
                       <button
                         disabled={isSubmitted}
                         className={[
-                          'w-full text-left px-2 py-1.5 min-h-[52px] rounded text-[12px] transition-colors',
+                          'w-full text-left px-1 py-1 min-h-[52px] rounded text-[12.5px] transition-colors',
                           !isSubmitted ? 'hover:bg-[var(--primary-bg)] cursor-pointer' : 'cursor-default',
                           item.project ? 'text-[var(--text)] font-medium' : 'text-[var(--gray-border)]',
                         ].join(' ')}
@@ -280,12 +293,15 @@ export default function PartSummary() {
                   </td>
 
                   {/* 코드 */}
-                  <td className="px-3 py-2 align-top text-[11px] font-mono text-[var(--text-sub)]">
+                  <td
+                    className="px-3 py-[8px] align-top text-[11px] font-mono text-[var(--text-sub)]"
+                    style={{ backgroundColor: 'var(--tbl-header)' }}
+                  >
                     {item.project?.code ?? ''}
                   </td>
 
                   {/* 진행업무 */}
-                  <td className="px-2 py-1 align-top">
+                  <td className="px-3 py-[8px] align-top">
                     <GridCell
                       value={item.doneWork}
                       isEditing={editingCell?.rowId === item.id && editingCell?.column === 'doneWork'}
@@ -298,7 +314,7 @@ export default function PartSummary() {
                   </td>
 
                   {/* 예정업무 */}
-                  <td className="px-2 py-1 align-top">
+                  <td className="px-3 py-[8px] align-top">
                     <GridCell
                       value={item.planWork}
                       isEditing={editingCell?.rowId === item.id && editingCell?.column === 'planWork'}
@@ -311,7 +327,7 @@ export default function PartSummary() {
                   </td>
 
                   {/* 비고 */}
-                  <td className="px-2 py-1 align-top">
+                  <td className="px-3 py-[8px] align-top">
                     <GridCell
                       value={item.remarks ?? ''}
                       isEditing={editingCell?.rowId === item.id && editingCell?.column === 'remarks'}
@@ -325,7 +341,7 @@ export default function PartSummary() {
 
                   {/* 액션 */}
                   {!isSubmitted && (
-                    <td className="px-2 py-1 align-top">
+                    <td className="px-3 py-[8px] align-top">
                       <button
                         onClick={() => setDeleteTarget(item.id)}
                         className="mt-1.5 text-[var(--text-sub)] hover:text-[var(--danger)] text-[14px] transition-colors"

@@ -18,13 +18,14 @@ interface EditableGridProps {
 
 type EditingCell = { rowId: string; column: 'doneWork' | 'planWork' | 'remarks' } | null;
 
+// 컬럼 너비: 11% / 8% / 30% / 30% / 18% / 3%
 const COLUMNS = [
-  { id: 'project', label: '프로젝트명', width: '15%' },
-  { id: 'code', label: '코드', width: '10%' },
-  { id: 'doneWork', label: '진행업무', width: '28%' },
-  { id: 'planWork', label: '예정업무', width: '28%' },
-  { id: 'remarks', label: '비고', width: '14%' },
-  { id: 'action', label: '', width: '5%' },
+  { id: 'project', label: '프로젝트명', width: '11%' },
+  { id: 'code',    label: '코드',       width: '8%' },
+  { id: 'doneWork', label: '진행업무',  width: '30%' },
+  { id: 'planWork', label: '예정업무',  width: '30%' },
+  { id: 'remarks', label: '비고',       width: '18%' },
+  { id: 'action',  label: '',           width: '3%' },
 ];
 
 export default function EditableGrid({
@@ -53,7 +54,7 @@ export default function EditableGrid({
   const handleSave = useCallback(
     (id: string, column: 'doneWork' | 'planWork' | 'remarks', value: string) => {
       const item = workItems.find((w) => w.id === id);
-      if (item && item[column] === value) return; // 변경 없으면 무시
+      if (item && item[column] === value) return;
       markDirty(id, { [column]: value });
       onUpdateItem(id, { [column]: value });
     },
@@ -72,14 +73,21 @@ export default function EditableGrid({
   return (
     <div>
       <div className="overflow-auto rounded-lg border border-[var(--gray-border)]">
-        <table className="w-full text-[12px] border-collapse">
+        <table
+          className="w-full border-collapse"
+          style={{ tableLayout: 'fixed' }}
+        >
+          <colgroup>
+            {COLUMNS.map((col) => (
+              <col key={col.id} style={{ width: col.width }} />
+            ))}
+          </colgroup>
           <thead className="sticky top-0 z-10">
             <tr className="bg-[var(--tbl-header)]">
               {COLUMNS.map((col) => (
                 <th
                   key={col.id}
-                  style={{ width: col.width }}
-                  className="text-left px-3 py-2.5 font-medium text-[var(--text-sub)] border-b border-[var(--gray-border)] whitespace-nowrap"
+                  className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)] border-b border-[var(--gray-border)] whitespace-nowrap"
                 >
                   {col.label}
                 </th>
@@ -89,7 +97,7 @@ export default function EditableGrid({
           <tbody>
             {workItems.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-12 text-[var(--text-sub)]">
+                <td colSpan={6} className="text-center py-12 text-[var(--text-sub)] text-[12.5px]">
                   업무항목이 없습니다. 아래 [+ 행 추가] 버튼을 눌러 추가하세요.
                 </td>
               </tr>
@@ -104,12 +112,12 @@ export default function EditableGrid({
                 ].join(' ')}
               >
                 {/* 프로젝트명 */}
-                <td className="px-2 py-1 align-top">
+                <td className="px-3 py-[8px] align-top text-[12.5px]">
                   <div className="relative">
                     <button
                       disabled={disabled}
                       className={[
-                        'w-full text-left px-2 py-1.5 min-h-[52px] rounded text-[12px] transition-colors',
+                        'w-full text-left px-1 py-1 min-h-[52px] rounded text-[12.5px] transition-colors',
                         !disabled ? 'hover:bg-[var(--primary-bg)] cursor-pointer' : 'cursor-default',
                         item.project ? 'text-[var(--text)] font-medium' : 'text-[var(--gray-border)]',
                       ].join(' ')}
@@ -130,14 +138,17 @@ export default function EditableGrid({
                 </td>
 
                 {/* 프로젝트 코드 */}
-                <td className="px-2 py-1 align-top">
-                  <div className="px-2 py-1.5 min-h-[52px] text-[11px] font-mono text-[var(--text-sub)]">
+                <td
+                  className="px-3 py-[8px] align-top text-[12.5px]"
+                  style={{ backgroundColor: 'var(--tbl-header)' }}
+                >
+                  <div className="px-1 py-1 min-h-[52px] text-[11px] font-mono text-[var(--text-sub)]">
                     {item.project?.code ?? ''}
                   </div>
                 </td>
 
                 {/* 진행업무 */}
-                <td className="px-2 py-1 align-top">
+                <td className="px-3 py-[8px] align-top text-[12.5px]">
                   <GridCell
                     value={item.doneWork}
                     isEditing={editingCell?.rowId === item.id && editingCell?.column === 'doneWork'}
@@ -151,7 +162,7 @@ export default function EditableGrid({
                 </td>
 
                 {/* 예정업무 */}
-                <td className="px-2 py-1 align-top">
+                <td className="px-3 py-[8px] align-top text-[12.5px]">
                   <GridCell
                     value={item.planWork}
                     isEditing={editingCell?.rowId === item.id && editingCell?.column === 'planWork'}
@@ -165,7 +176,7 @@ export default function EditableGrid({
                 </td>
 
                 {/* 비고 */}
-                <td className="px-2 py-1 align-top">
+                <td className="px-3 py-[8px] align-top text-[12.5px]">
                   <GridCell
                     value={item.remarks ?? ''}
                     isEditing={editingCell?.rowId === item.id && editingCell?.column === 'remarks'}
@@ -178,7 +189,7 @@ export default function EditableGrid({
                 </td>
 
                 {/* 액션 */}
-                <td className="px-2 py-1 align-top">
+                <td className="px-3 py-[8px] align-top text-[12.5px]">
                   {!disabled && (
                     <button
                       onClick={() => setDeleteTarget(item.id)}

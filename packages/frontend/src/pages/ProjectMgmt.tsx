@@ -42,7 +42,7 @@ const DEFAULT_FORM: ProjectFormData = {
 export default function ProjectMgmt() {
   const { user } = useAuthStore();
   const { addToast } = useUiStore();
-  const teamId = user?.id ? '1' : '1'; // 실제로는 user.teamId 사용
+  const teamId = user?.id ? '1' : '1';
 
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -136,21 +136,24 @@ export default function ProjectMgmt() {
 
   return (
     <div>
-      {/* 요약 카드 */}
-      <div className="grid grid-cols-4 gap-4 mb-5">
-        <SummaryCard label="전체 프로젝트" value={projects.length} />
-        <SummaryCard label="공통 과제" value={commonCount} />
-        <SummaryCard label="수행 과제" value={execCount} />
-        <SummaryCard label="활성 프로젝트" value={activeCount} />
+      {/* 요약 카드 — grid-cols-3 */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <SummaryCard label="전체 프로젝트" value={projects.length} iconBg="var(--primary-bg)" />
+        <SummaryCard label="공통 과제" value={commonCount} iconBg="var(--primary-bg)" />
+        <SummaryCard label="수행 과제" value={execCount} iconBg="var(--primary-bg)" />
+      </div>
+      <div className="grid grid-cols-1 mb-4">
+        <SummaryCard label="활성 프로젝트" value={activeCount} iconBg="var(--ok-bg)" />
       </div>
 
-      {/* 필터 + 등록 버튼 */}
+      {/* 필터 바 */}
       <div className="bg-white rounded-lg border border-[var(--gray-border)] p-4 mb-4">
         <div className="flex items-center gap-3">
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="h-8 px-2 border border-[var(--gray-border)] rounded text-[12px] outline-none"
+            className="px-2 border border-[var(--gray-border)] rounded outline-none text-[12.5px]"
+            style={{ height: '30px' }}
           >
             <option value="">전체 분류</option>
             <option value="COMMON">공통</option>
@@ -159,7 +162,8 @@ export default function ProjectMgmt() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-8 px-2 border border-[var(--gray-border)] rounded text-[12px] outline-none"
+            className="px-2 border border-[var(--gray-border)] rounded outline-none text-[12.5px]"
+            style={{ height: '30px' }}
           >
             <option value="">전체 상태</option>
             <option value="ACTIVE">활성</option>
@@ -171,7 +175,8 @@ export default function ProjectMgmt() {
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             placeholder="프로젝트명 또는 코드 검색"
-            className="h-8 px-3 border border-[var(--gray-border)] rounded text-[12px] outline-none w-[220px]"
+            className="px-3 border border-[var(--gray-border)] rounded outline-none text-[12.5px] w-[220px]"
+            style={{ height: '30px' }}
           />
           <div className="ml-auto">
             <Button onClick={openCreate}>+ 프로젝트 등록</Button>
@@ -179,16 +184,23 @@ export default function ProjectMgmt() {
         </div>
       </div>
 
-      {/* 테이블 */}
+      {/* 테이블 패널 */}
       <div className="bg-white rounded-lg border border-[var(--gray-border)] overflow-hidden">
-        <table className="w-full text-[12px]">
+        <div
+          className="flex items-center justify-between border-b border-[var(--gray-border)]"
+          style={{ padding: '11px 16px' }}
+        >
+          <p className="text-[13px] font-semibold text-[var(--text)]">프로젝트 목록</p>
+          <p className="text-[12px] text-[var(--text-sub)]">총 {filteredProjects.length}건</p>
+        </div>
+        <table className="w-full">
           <thead>
             <tr className="bg-[var(--tbl-header)] border-b border-[var(--gray-border)]">
-              <th className="text-left px-4 py-2.5 font-medium text-[var(--text-sub)]">프로젝트명</th>
-              <th className="text-left px-4 py-2.5 font-medium text-[var(--text-sub)]">코드</th>
-              <th className="text-left px-4 py-2.5 font-medium text-[var(--text-sub)]">분류</th>
-              <th className="text-left px-4 py-2.5 font-medium text-[var(--text-sub)]">상태</th>
-              <th className="text-right px-4 py-2.5 font-medium text-[var(--text-sub)]">액션</th>
+              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">프로젝트명</th>
+              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">코드</th>
+              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">분류</th>
+              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">상태</th>
+              <th className="text-right px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">액션</th>
             </tr>
           </thead>
           <tbody>
@@ -210,23 +222,25 @@ export default function ProjectMgmt() {
                   idx % 2 === 1 ? 'bg-[var(--row-alt)]' : '',
                 ].join(' ')}
               >
-                <td className="px-4 py-2.5 font-medium">{project.name}</td>
-                <td className="px-4 py-2.5 text-[var(--text-sub)] font-mono">{project.code}</td>
-                <td className="px-4 py-2.5">
+                <td className="px-3 py-[9px] text-[12.5px] font-medium">{project.name}</td>
+                <td className="px-3 py-[9px] text-[12.5px] text-[var(--text-sub)] font-mono">{project.code}</td>
+                <td className="px-3 py-[9px]">
                   <Badge variant={project.category === 'COMMON' ? 'purple' : 'blue'}>
                     {CATEGORY_LABELS[project.category]}
                   </Badge>
                 </td>
-                <td className="px-4 py-2.5">
+                <td className="px-3 py-[9px]">
                   <Badge variant={STATUS_BADGE[project.status] ?? 'gray'}>
                     {STATUS_LABELS[project.status]}
                   </Badge>
                 </td>
-                <td className="px-4 py-2.5 text-right flex justify-end gap-1">
-                  <Button size="small" variant="outline" onClick={() => openEdit(project)}>수정</Button>
-                  {project.status !== 'COMPLETED' && (
-                    <Button size="small" variant="danger" onClick={() => openDelete(project)}>삭제</Button>
-                  )}
+                <td className="px-3 py-[9px] text-right">
+                  <div className="flex justify-end gap-1">
+                    <Button size="small" variant="outline" onClick={() => openEdit(project)}>수정</Button>
+                    {project.status !== 'COMPLETED' && (
+                      <Button size="small" variant="danger" onClick={() => openDelete(project)}>삭제</Button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -252,41 +266,41 @@ export default function ProjectMgmt() {
         }
       >
         <div className="flex flex-col gap-3">
-          <div>
-            <label className="block text-[11px] font-medium text-[var(--text-sub)] mb-1">프로젝트명 *</label>
+          <div className="grid gap-[10px]" style={{ gridTemplateColumns: '90px 1fr', alignItems: 'center' }}>
+            <label className="text-[12.5px] font-semibold text-[var(--text-sub)]">프로젝트명 <span className="text-[var(--danger)]">*</span></label>
             <input
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="w-full h-8 px-3 border border-[var(--gray-border)] rounded text-[12px] outline-none focus:border-[var(--primary)]"
+              className="h-8 px-3 border border-[var(--gray-border)] rounded text-[12.5px] outline-none focus:border-[var(--primary)] w-full"
             />
           </div>
-          <div>
-            <label className="block text-[11px] font-medium text-[var(--text-sub)] mb-1">프로젝트코드 *</label>
+          <div className="grid gap-[10px]" style={{ gridTemplateColumns: '90px 1fr', alignItems: 'center' }}>
+            <label className="text-[12.5px] font-semibold text-[var(--text-sub)]">코드 <span className="text-[var(--danger)]">*</span></label>
             <input
               value={form.code}
               onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
               placeholder="예: 공통2500-팀"
-              className="w-full h-8 px-3 border border-[var(--gray-border)] rounded text-[12px] outline-none focus:border-[var(--primary)] font-mono"
+              className="h-8 px-3 border border-[var(--gray-border)] rounded text-[12.5px] outline-none focus:border-[var(--primary)] font-mono w-full"
             />
           </div>
-          <div>
-            <label className="block text-[11px] font-medium text-[var(--text-sub)] mb-1">분류</label>
+          <div className="grid gap-[10px]" style={{ gridTemplateColumns: '90px 1fr', alignItems: 'center' }}>
+            <label className="text-[12.5px] font-semibold text-[var(--text-sub)]">분류</label>
             <select
               value={form.category}
               onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as 'COMMON' | 'EXECUTION' }))}
-              className="w-full h-8 px-2 border border-[var(--gray-border)] rounded text-[12px] outline-none"
+              className="h-8 px-2 border border-[var(--gray-border)] rounded text-[12.5px] outline-none w-full"
             >
               <option value="COMMON">공통</option>
               <option value="EXECUTION">수행</option>
             </select>
           </div>
           {editProject && (
-            <div>
-              <label className="block text-[11px] font-medium text-[var(--text-sub)] mb-1">상태</label>
+            <div className="grid gap-[10px]" style={{ gridTemplateColumns: '90px 1fr', alignItems: 'center' }}>
+              <label className="text-[12.5px] font-semibold text-[var(--text-sub)]">상태</label>
               <select
                 value={form.status}
                 onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as 'ACTIVE' | 'HOLD' | 'COMPLETED' }))}
-                className="w-full h-8 px-2 border border-[var(--gray-border)] rounded text-[12px] outline-none"
+                className="h-8 px-2 border border-[var(--gray-border)] rounded text-[12.5px] outline-none w-full"
               >
                 <option value="ACTIVE">활성</option>
                 <option value="HOLD">보류</option>

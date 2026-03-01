@@ -11,14 +11,14 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<Variant, string> = {
-  primary: 'bg-[var(--primary)] text-white border border-[var(--primary)] hover:bg-[var(--primary-dark)] hover:border-[var(--primary-dark)]',
-  outline: 'bg-white text-[var(--text)] border border-[var(--gray-border)] hover:border-[var(--primary)] hover:text-[var(--primary)]',
-  danger: 'bg-[var(--danger)] text-white border border-[var(--danger)] hover:opacity-90',
+  primary: 'bg-[var(--primary)] text-white border border-[var(--primary)] hover:bg-[var(--primary-dark)] hover:border-[var(--primary-dark)] active:opacity-90',
+  outline: 'bg-white text-[var(--text)] border border-[var(--gray-border)] hover:bg-[var(--gray-light)] hover:border-[var(--primary)] hover:text-[var(--primary)]',
+  danger:  'bg-[var(--danger)] text-white border border-[var(--danger)] hover:opacity-90 active:opacity-80',
 };
 
 const sizeStyles: Record<Size, string> = {
-  default: 'h-[30px] px-3 text-[12px]',
-  small: 'h-[26px] px-2 text-[11px]',
+  default: 'h-[30px] px-3 text-[12.5px]',
+  small:   'h-[26px] px-2 text-[11px]',
 };
 
 export default function Button({
@@ -35,7 +35,7 @@ export default function Button({
       {...props}
       disabled={disabled}
       className={[
-        'inline-flex items-center gap-1.5 rounded font-medium transition-colors cursor-pointer',
+        'inline-flex items-center gap-[5px] rounded-[5px] font-medium transition-all duration-150 cursor-pointer whitespace-nowrap',
         variantStyles[variant],
         sizeStyles[size],
         disabled ? 'opacity-50 cursor-not-allowed' : '',
