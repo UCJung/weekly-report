@@ -6,3 +6,162 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ──────────── 조직 ────────────
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parts    Part[]
+  projects Project[]
+
+  @@map("teams")
+}
+
+model Part {
+  id     String @id @default(cuid())
+  name   String
+  teamId String
+
+  team           Team          @relation(fields: [teamId], references: [id])
+  members        Member[]
+  partSummaries  PartSummary[]
+
+  @@unique([teamId, name])
+  @@map("parts")
+}
+
+model Member {
+  id       String     @id @default(cuid())
+  name     String
+  email    String     @unique
+  password String
+  role     MemberRole @default(MEMBER)
+  partId   String
+  isActive Boolean    @default(true)
+
+  part          Part           @relation(fields: [partId], references: [id])
+  weeklyReports WeeklyReport[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("members")
+}
+
+enum MemberRole {
+  LEADER
+  PART_LEADER
+  MEMBER
+}
+
+// ──────────── 프로젝트 ────────────
+
+model Project {
+  id       String          @id @default(cuid())
+  name     String
+  code     String
+  category ProjectCategory
+  status   ProjectStatus   @default(ACTIVE)
+  teamId   String
+
+  team             Team              @relation(fields: [teamId], references: [id])
+  workItems        WorkItem[]
+  summaryWorkItems SummaryWorkItem[]
+
+  @@unique([teamId, code])
+  @@map("projects")
+}
+
+enum ProjectCategory {
+  COMMON
+  EXECUTION
+}
+
+enum ProjectStatus {
+  ACTIVE
+  HOLD
+  COMPLETED
+}
+
+// ──────────── 주간업무 ────────────
+
+model WeeklyReport {
+  id        String       @id @default(cuid())
+  memberId  String
+  weekStart DateTime
+  weekLabel String
+  status    ReportStatus @default(DRAFT)
+
+  member    Member     @relation(fields: [memberId], references: [id])
+  workItems WorkItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([memberId, weekStart])
+  @@map("weekly_reports")
+}
+
+enum ReportStatus {
+  DRAFT
+  SUBMITTED
+}
+
+model WorkItem {
+  id             String @id @default(cuid())
+  weeklyReportId String
+  projectId      String
+
+  doneWork  String  @db.Text
+  planWork  String  @db.Text
+  remarks   String? @db.Text
+  sortOrder Int     @default(0)
+
+  weeklyReport WeeklyReport @relation(fields: [weeklyReportId], references: [id], onDelete: Cascade)
+  project      Project      @relation(fields: [projectId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("work_items")
+}
+
+// ──────────── 파트 취합보고 ────────────
+
+model PartSummary {
+  id        String       @id @default(cuid())
+  partId    String
+  weekStart DateTime
+  weekLabel String
+  status    ReportStatus @default(DRAFT)
+
+  part             Part              @relation(fields: [partId], references: [id])
+  summaryWorkItems SummaryWorkItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([partId, weekStart])
+  @@map("part_summaries")
+}
+
+model SummaryWorkItem {
+  id            String @id @default(cuid())
+  partSummaryId String
+  projectId     String
+
+  doneWork  String  @db.Text
+  planWork  String  @db.Text
+  remarks   String? @db.Text
+  sortOrder Int     @default(0)
+
+  partSummary PartSummary @relation(fields: [partSummaryId], references: [id], onDelete: Cascade)
+  project     Project     @relation(fields: [projectId], references: [id])
+
+  @@map("summary_work_items")
+}
