@@ -37,10 +37,11 @@ export class AuthService {
 
   async login(member: {
     id: string;
+    name: string;
     email: string;
     role: string;
     partId: string;
-    part: { teamId: string };
+    part: { name: string; teamId: string };
   }) {
     const payload = {
       sub: member.id,
@@ -65,10 +66,13 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
-      member: {
+      user: {
         id: member.id,
+        name: member.name,
         email: member.email,
         role: member.role,
+        partId: member.partId,
+        partName: member.part.name,
       },
     };
   }
