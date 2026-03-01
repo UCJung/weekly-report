@@ -28,6 +28,14 @@
   /* Sidebar */
   --sidebar-bg: #181d2e;
   --sidebar-w: 210px;
+  --sidebar-active: #252d48;
+  --sidebar-divider: #2a3045;
+  --sidebar-text: #8896b3;
+  --sidebar-menu-title: #4a5470;
+
+  /* Badge */
+  --badge-blue-bg: #e0f0ff;
+  --badge-blue-text: #1a6bb5;
 
   /* Layout */
   --header-h: 48px;
@@ -53,4 +61,39 @@ body {
 #root {
   min-height: 100vh;
   display: flex;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-sub);
 }

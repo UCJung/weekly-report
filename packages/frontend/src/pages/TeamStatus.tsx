@@ -37,7 +37,7 @@ const SUMMARY_STATUS_INFO: Record<string, { label: string; variant: 'ok' | 'warn
 interface WorkRow {
   partName: string;
   member: MemberWeeklyStatus['member'];
-  item: MemberWeeklyStatus['report']['workItems'][0] | null;
+  item: NonNullable<MemberWeeklyStatus['report']>['workItems'][0] | null;
   isFirstInPart: boolean;
   partRowSpan: number;
   isFirstInMember: boolean;

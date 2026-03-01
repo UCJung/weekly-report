@@ -67,7 +67,7 @@ export default function PartStatus() {
   };
 
   // 플랫한 행 목록 생성 (팀원별 workItem 행)
-  const rows: Array<{ member: MemberWeeklyStatus['member']; item: MemberWeeklyStatus['report']['workItems'][0] | null }> = [];
+  const rows: Array<{ member: MemberWeeklyStatus['member']; item: NonNullable<MemberWeeklyStatus['report']>['workItems'][0] | null }> = [];
   for (const entry of statusList) {
     const items = entry.report?.workItems ?? [];
     if (items.length === 0) {
