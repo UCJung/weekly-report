@@ -103,19 +103,82 @@ cd packages/frontend && bun run build
 cd packages/backend && bun run build
 ```
 
-## 운영 배포 (Docker)
+## 프로덕션 배포 (Docker Desktop)
+
+Docker Desktop이 실행 중이어야 합니다.
+
+### 1. 환경변수 파일 생성
 
 ```bash
-# 운영 환경 환경변수 설정
-export POSTGRES_PASSWORD=your-production-password
-export JWT_SECRET=your-production-jwt-secret
-export JWT_REFRESH_SECRET=your-production-refresh-secret
+cp .env.production.example .env.production
+```
 
-# Docker 이미지 빌드 및 기동
-docker compose -f docker-compose.prod.yml up -d
+### 2. 환경변수 편집
 
-# DB 마이그레이션
-docker compose -f docker-compose.prod.yml exec backend bunx prisma migrate deploy
+`.env.production` 파일을 열어 아래 값을 설정합니다:
+
+```env
+# PostgreSQL
+POSTGRES_DB=weekly_report
+POSTGRES_USER=prod
+POSTGRES_PASSWORD=여기에_강한_비밀번호_입력
+
+# JWT (추측이 어려운 긴 랜덤 문자열)
+JWT_SECRET=여기에_랜덤_문자열_입력
+JWT_REFRESH_SECRET=여기에_다른_랜덤_문자열_입력
+
+# CORS (Nginx 프록시 사용 시 비워두면 됨, 외부 도메인 사용 시 설정)
+# CORS_ORIGIN=https://your-domain.com
+```
+
+### 3. 빌드 및 실행
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+```
+
+> 최초 빌드는 이미지 다운로드 + 빌드로 5~10분 소요될 수 있습니다.
+> DB 마이그레이션은 백엔드 컨테이너 시작 시 자동 실행됩니다.
+
+### 4. 상태 확인
+
+```bash
+docker compose -f docker-compose.prod.yml ps
+```
+
+4개 서비스(postgres, redis, backend, frontend)가 모두 `running` / `healthy` 상태인지 확인합니다.
+
+### 5. 접속
+
+브라우저에서 **http://localhost** 접속 → 로그인 화면이 표시됩니다.
+
+### 운영 명령어
+
+| 작업 | 명령어 |
+|------|--------|
+| 로그 확인 | `docker compose -f docker-compose.prod.yml logs -f backend` |
+| 전체 중지 | `docker compose -f docker-compose.prod.yml down` |
+| 중지 + DB 초기화 | `docker compose -f docker-compose.prod.yml down -v` |
+| 코드 변경 후 재배포 | `docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build` |
+| 특정 서비스 재시작 | `docker compose -f docker-compose.prod.yml restart backend` |
+
+> Docker Desktop 앱의 **Containers** 탭에서도 컨테이너 상태 확인 및 로그 조회가 가능합니다.
+
+### 아키텍처
+
+```
+┌─────────────┐     ┌──────────────┐     ┌────────────┐
+│   Browser   │────▶│  Nginx (:80) │────▶│  NestJS    │
+│   (React)   │     │  (Frontend   │     │  (:3000)   │
+│             │     │   + Proxy)   │     │            │
+└─────────────┘     └──────────────┘     └─────┬──────┘
+                                               │
+                                    ┌──────────┼──────────┐
+                                    │          │          │
+                              ┌─────▼─────┐  ┌─▼────────┐
+                              │ PostgreSQL │  │  Redis   │
+                              │  (:5432)   │  │ (:6379)  │
+                              └───────────┘  └──────────┘
 ```
 
 ## 디렉터리 구조
@@ -139,6 +202,7 @@ DB 시드(`bunx prisma db seed`) 실행 후 아래 계정으로 로그인할 수
 
 | 이름 | 이메일 | 역할 | 파트 |
 |------|--------|------|------|
+| 시스템관리자 | admin@system.local | 관리자 (ADMIN) | — |
 | 홍길동 | leader@example.com | 팀장 (LEADER) | DX |
 | 최수진 | ax.partleader@example.com | 파트장 (PART_LEADER) | AX |
 | 김철수 | dx.member1@example.com | 팀원 (MEMBER) | DX |
@@ -183,3 +247,4 @@ DB 시드(`bunx prisma db seed`) 실행 후 아래 계정으로 로그인할 수
 | WORK-12 | 팀원/프로젝트 정렬(DnD), 복수 역할 지원, 주차 통일 |
 | WORK-13 | 보고서 취합 기능 재설계 (전체/파트 범위 선택, 개별 행 로딩·병합·편집·삭제) |
 | WORK-14 | UI 기능 테스트 수정사항 (GridCell 높이, 서식 기호 통일, ExpandedEditor 오버레이, 전주 불러오기 개선, 대시보드 주차 네비게이션, 취합보고서 프로젝트 셀 병합, 취합 기반 Excel 다운로드) |
+| WORK-15 | 계정 신청/승인, 비밀번호 변경/초기화, 팀 생성/가입 신청, 멀티팀 소속, 관리자 대시보드 |

@@ -1,0 +1,54 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build output
+dist
+build
+.next
+
+# Test & coverage
+coverage
+*.test.ts
+*.spec.ts
+__tests__
+
+# Git
+.git
+.gitignore
+
+# IDE & tooling
+.claude
+.serena
+.vscode
+.idea
+*.swp
+*.swo
+
+# Docs & tasks (not needed in Docker image)
+docs
+tasks
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment files
+.env
+.env.*
+!.env.production.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Analysis scripts
+analyze_excel.mjs
+packages/backend/analyze_excel.mjs
+packages/backend/analyze_excel_detail.mjs
+
+# Misc
+*.tsbuildinfo
+turbo.json
+CLAUDE.md
