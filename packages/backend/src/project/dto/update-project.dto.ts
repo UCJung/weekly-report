@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { ProjectCategory, ProjectStatus } from '@prisma/client';
 
 export class UpdateProjectDto {
@@ -17,4 +17,9 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsEnum(ProjectStatus)
   status?: ProjectStatus;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  sortOrder?: number;
 }

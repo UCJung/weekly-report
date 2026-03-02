@@ -62,12 +62,13 @@ enum MemberRole {
 // ──────────── 프로젝트 ────────────
 
 model Project {
-  id       String          @id @default(cuid())
-  name     String
-  code     String
-  category ProjectCategory
-  status   ProjectStatus   @default(ACTIVE)
-  teamId   String
+  id        String          @id @default(cuid())
+  name      String
+  code      String
+  category  ProjectCategory
+  status    ProjectStatus   @default(ACTIVE)
+  teamId    String
+  sortOrder Int             @default(0)
 
   team             Team              @relation(fields: [teamId], references: [id])
   workItems        WorkItem[]

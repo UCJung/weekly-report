@@ -66,4 +66,13 @@ export class PartSummaryController {
   ) {
     return this.partSummaryService.getTeamWeeklyOverview(teamId, query.week);
   }
+
+  @Get('teams/:teamId/members-weekly-status')
+  @Roles(MemberRole.LEADER)
+  async getTeamMembersWeeklyStatus(
+    @Param('teamId') teamId: string,
+    @Query() query: PartWeeklyStatusQueryDto,
+  ) {
+    return this.partSummaryService.getTeamMembersWeeklyStatus(teamId, query.week);
+  }
 }

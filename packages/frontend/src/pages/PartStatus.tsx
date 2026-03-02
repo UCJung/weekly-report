@@ -1,11 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import { useUiStore } from '../stores/uiStore';
 import { useQuery } from '@tanstack/react-query';
-import { partApi, MemberWeeklyStatus, SubmissionStatus } from '../api/part.api';
-import { exportApi } from '../api/export.api';
+import { partApi, MemberWeeklyStatus } from '../api/part.api';
+import { teamApi } from '../api/team.api';
 import FormattedText from '../components/grid/FormattedText';
-import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import {
   Select,
@@ -14,6 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/Select';
+
+// ───── 주차 유틸 ─────
 
 function getWeekLabel(date: Date): string {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -35,121 +35,259 @@ function addWeeks(weekLabel: string, n: number): string {
   return getWeekLabel(monday);
 }
 
-const STATUS_INFO: Record<string, { label: string; variant: 'ok' | 'warn' | 'gray'; icon: string }> = {
-  SUBMITTED:   { label: '제출완료', variant: 'ok',   icon: '✅' },
-  DRAFT:       { label: '임시저장', variant: 'warn',  icon: '📝' },
-  NOT_STARTED: { label: '미작성',   variant: 'gray',  icon: '❌' },
-};
+// ───── 타입 ─────
 
-interface FlatRow {
-  member: MemberWeeklyStatus['member'];
-  item: NonNullable<MemberWeeklyStatus['report']>['workItems'][0] | null;
-  memberRowSpan: number;
-  isFirstInMember: boolean;
-  reportStatus: string;
+type ViewMode = 'by-project' | 'by-member';
+
+interface ProjectRow {
+  projectId: string;
+  projectName: string;
+  projectCode: string;
+  projectSortOrder: number;
+  memberId: string;
+  memberName: string;
+  partId: string;
+  partName: string;
+  doneWork: string;
+  planWork: string;
+  remarks: string;
 }
+
+// ───── 컴포넌트 ─────
 
 export default function PartStatus() {
   const { user } = useAuthStore();
-  const { addToast } = useUiStore();
+  const isLeader = user?.role === 'LEADER';
+
   const [currentWeek, setCurrentWeek] = useState(() => getWeekLabel(new Date()));
-  const [isDownloading, setIsDownloading] = useState(false);
 
-  // 필터 상태
-  const [memberFilter, setMemberFilter] = useState('');
-  const [projectFilter, setProjectFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  // 그룹 A: 인원 필터
+  const [selectedPartId, setSelectedPartId] = useState<string>('all');
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
 
-  const partId = user?.partId ?? '';
+  // 그룹 B: 프로젝트 필터
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
 
-  const { data: statusList = [], isLoading } = useQuery({
-    queryKey: ['part-weekly-status', partId, currentWeek],
-    queryFn: () => partApi.getPartWeeklyStatus(partId, currentWeek).then((r) => r.data.data),
-    enabled: !!partId && !!currentWeek,
+  // 뷰 모드
+  const [viewMode, setViewMode] = useState<ViewMode>('by-project');
+
+  const teamId = user?.teamId ?? '';
+  const userPartId = user?.partId ?? '';
+
+  // ── 파트 목록 (LEADER만 사용) ──
+  const { data: parts = [] } = useQuery({
+    queryKey: ['parts', teamId],
+    queryFn: () => teamApi.getParts(teamId).then((r) => r.data.data),
+    enabled: isLeader && !!teamId,
   });
 
-  const { data: submissionList = [] } = useQuery({
-    queryKey: ['part-submission-status', partId, currentWeek],
-    queryFn: () => partApi.getSubmissionStatus(partId, currentWeek).then((r) => r.data.data),
-    enabled: !!partId && !!currentWeek,
+  // ── 업무 현황 데이터 조회 ──
+  // LEADER: 전체 팀원 조회 (teams/:teamId/members-weekly-status)
+  // PART_LEADER / MEMBER: 자기 파트만 (parts/:partId/weekly-status)
+  const { data: allStatusList = [], isLoading } = useQuery({
+    queryKey: isLeader
+      ? ['team-members-weekly-status', teamId, currentWeek]
+      : ['part-weekly-status', userPartId, currentWeek],
+    queryFn: () =>
+      isLeader
+        ? partApi.getTeamMembersWeeklyStatus(teamId, currentWeek).then((r) => r.data.data)
+        : partApi.getPartWeeklyStatus(userPartId, currentWeek).then((r) => r.data.data),
+    enabled: isLeader ? !!teamId : !!userPartId,
   });
 
-  const handleExcel = async () => {
-    setIsDownloading(true);
-    try {
-      await exportApi.downloadExcel({ type: 'part', partId, week: currentWeek });
-      addToast('success', 'Excel 파일을 다운로드했습니다.');
-    } catch {
-      addToast('danger', 'Excel 다운로드에 실패했습니다.');
-    } finally {
-      setIsDownloading(false);
+  // ── 파트별 팀원 맵 (그룹 A 종속 필터링용) ──
+  const partMemberMap = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }[]>();
+    for (const entry of allStatusList) {
+      const pid = entry.member.partId;
+      if (!map.has(pid)) map.set(pid, []);
+      const list = map.get(pid)!;
+      if (!list.some((m) => m.id === entry.member.id)) {
+        list.push({ id: entry.member.id, name: entry.member.name });
+      }
     }
+    return map;
+  }, [allStatusList]);
+
+  // 선택된 파트에 속한 팀원 목록
+  const availableMembers = useMemo(() => {
+    if (selectedPartId === 'all') {
+      const seen = new Set<string>();
+      const result: { id: string; name: string }[] = [];
+      for (const entry of allStatusList) {
+        if (!seen.has(entry.member.id)) {
+          seen.add(entry.member.id);
+          result.push({ id: entry.member.id, name: entry.member.name });
+        }
+      }
+      return result;
+    }
+    return partMemberMap.get(selectedPartId) ?? [];
+  }, [selectedPartId, partMemberMap, allStatusList]);
+
+  // 파트 변경 시 팀원 초기화
+  const handlePartChange = (value: string) => {
+    setSelectedPartId(value);
+    setSelectedMemberId('all');
   };
 
-  // 고유 팀원·프로젝트 목록 (필터 옵션용)
-  const memberOptions = useMemo(() => {
-    const seen = new Set<string>();
-    return statusList
-      .map((e) => ({ id: e.member.id, name: e.member.name }))
-      .filter((m) => { if (seen.has(m.id)) return false; seen.add(m.id); return true; });
-  }, [statusList]);
+  // ── 그룹 A + B 조합 필터링 후 플랫 행 구성 ──
+  const flatRows = useMemo<ProjectRow[]>(() => {
+    const rows: ProjectRow[] = [];
 
+    for (const entry of allStatusList) {
+      // 그룹 A 필터: 파트
+      if (selectedPartId !== 'all' && entry.member.partId !== selectedPartId) continue;
+      // 그룹 A 필터: 팀원
+      if (selectedMemberId !== 'all' && entry.member.id !== selectedMemberId) continue;
+
+      const workItems = entry.report?.workItems ?? [];
+
+      for (const item of workItems) {
+        // 그룹 B 필터: 프로젝트
+        if (selectedProjectId !== 'all' && item.project?.id !== selectedProjectId) continue;
+
+        rows.push({
+          projectId: item.project?.id ?? '__no_project__',
+          projectName: item.project?.name ?? '(프로젝트 없음)',
+          projectCode: item.project?.code ?? '',
+          projectSortOrder: (item.project as { sortOrder?: number } | undefined)?.sortOrder ?? 0,
+          memberId: entry.member.id,
+          memberName: entry.member.name,
+          partId: entry.member.partId,
+          partName: entry.member.partName,
+          doneWork: item.doneWork,
+          planWork: item.planWork,
+          remarks: item.remarks ?? '',
+        });
+      }
+
+      // 업무항목이 없는 팀원도 한 행 표시 (필터에서 특정 프로젝트 선택 안 한 경우만)
+      if (workItems.length === 0 && selectedProjectId === 'all') {
+        rows.push({
+          projectId: '__empty__',
+          projectName: '',
+          projectCode: '',
+          projectSortOrder: 999999,
+          memberId: entry.member.id,
+          memberName: entry.member.name,
+          partId: entry.member.partId,
+          partName: entry.member.partName,
+          doneWork: '',
+          planWork: '',
+          remarks: '',
+        });
+      }
+    }
+
+    return rows;
+  }, [allStatusList, selectedPartId, selectedMemberId, selectedProjectId]);
+
+  // ── 프로젝트별 보기 정렬: sortOrder → projectName → memberName ──
+  const sortedRowsByProject = useMemo(() => {
+    return [...flatRows].sort((a, b) => {
+      if (a.projectSortOrder !== b.projectSortOrder) return a.projectSortOrder - b.projectSortOrder;
+      if (a.projectName !== b.projectName) return a.projectName.localeCompare(b.projectName);
+      return a.memberName.localeCompare(b.memberName);
+    });
+  }, [flatRows]);
+
+  // ── 팀원별 보기 정렬: partName → memberName → sortOrder ──
+  const sortedRowsByMember = useMemo(() => {
+    return [...flatRows].sort((a, b) => {
+      if (a.partName !== b.partName) return a.partName.localeCompare(b.partName);
+      if (a.memberName !== b.memberName) return a.memberName.localeCompare(b.memberName);
+      return a.projectSortOrder - b.projectSortOrder;
+    });
+  }, [flatRows]);
+
+  const displayRows = viewMode === 'by-project' ? sortedRowsByProject : sortedRowsByMember;
+
+  // ── 프로젝트 필터 옵션 (전체 데이터 기준, sortOrder 정렬) ──
   const projectOptions = useMemo(() => {
-    const seen = new Set<string>();
-    const opts: { id: string; name: string }[] = [];
-    for (const entry of statusList) {
+    const seen = new Map<string, { id: string; name: string; code: string; sortOrder: number }>();
+    for (const entry of allStatusList) {
       for (const item of entry.report?.workItems ?? []) {
         if (item.project && !seen.has(item.project.id)) {
-          seen.add(item.project.id);
-          opts.push({ id: item.project.id, name: item.project.name });
+          seen.set(item.project.id, {
+            id: item.project.id,
+            name: item.project.name,
+            code: item.project.code,
+            sortOrder: (item.project as { sortOrder?: number } | undefined)?.sortOrder ?? 0,
+          });
         }
       }
     }
-    return opts;
-  }, [statusList]);
-
-  // 클라이언트 필터링
-  const filteredStatusList = useMemo(() => {
-    return statusList.filter((entry) => {
-      if (memberFilter && memberFilter !== 'all' && entry.member.id !== memberFilter) return false;
-      if (statusFilter && statusFilter !== 'all') {
-        const reportStatus = entry.report?.status ?? 'NOT_STARTED';
-        if (reportStatus !== statusFilter) return false;
-      }
-      if (projectFilter && projectFilter !== 'all') {
-        const items = entry.report?.workItems ?? [];
-        if (!items.some((item) => item.project?.id === projectFilter)) return false;
-      }
-      return true;
+    return Array.from(seen.values()).sort((a, b) => {
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return a.name.localeCompare(b.name);
     });
-  }, [statusList, memberFilter, projectFilter, statusFilter]);
+  }, [allStatusList]);
 
-  // rowspan 병합을 위한 플랫 행 구성
-  const rows: FlatRow[] = [];
-  for (const entry of filteredStatusList) {
-    const items = entry.report?.workItems ?? [];
-    const filteredItems = projectFilter && projectFilter !== 'all'
-      ? items.filter((item) => item.project?.id === projectFilter)
-      : items;
-    const reportStatus = entry.report?.status ?? 'NOT_STARTED';
-    const memberRowSpan = filteredItems.length || 1;
-    if (filteredItems.length === 0) {
-      rows.push({ member: entry.member, item: null, memberRowSpan, isFirstInMember: true, reportStatus });
-    } else {
-      filteredItems.forEach((item, i) => {
-        rows.push({ member: entry.member, item, memberRowSpan, isFirstInMember: i === 0, reportStatus });
-      });
+  // 파트 목록 (PART_LEADER는 자기 파트만)
+  const partOptions = useMemo(() => {
+    if (isLeader) return parts;
+    // PART_LEADER: 자기 파트만
+    return [{ id: userPartId, name: user?.partName ?? '' }];
+  }, [isLeader, parts, userPartId, user]);
+
+  const hasFilters =
+    selectedPartId !== 'all' ||
+    selectedMemberId !== 'all' ||
+    selectedProjectId !== 'all';
+
+  const handleReset = () => {
+    setSelectedPartId('all');
+    setSelectedMemberId('all');
+    setSelectedProjectId('all');
+  };
+
+  // ── rowspan 계산 (프로젝트별 보기) ──
+  const projectRowSpanMap = useMemo(() => {
+    if (viewMode !== 'by-project') return new Map<number, number>();
+    const map = new Map<number, number>();
+    let i = 0;
+    while (i < displayRows.length) {
+      const pid = displayRows[i].projectId;
+      let count = 1;
+      while (i + count < displayRows.length && displayRows[i + count].projectId === pid) count++;
+      map.set(i, count);
+      i += count;
     }
-  }
+    return map;
+  }, [displayRows, viewMode]);
 
-  const submittedCount = (submissionList as SubmissionStatus[]).filter((s) => s.status === 'SUBMITTED').length;
-  const totalCount = (submissionList as SubmissionStatus[]).length;
+  // ── rowspan 계산 (팀원별 보기) ──
+  const memberRowSpanMap = useMemo(() => {
+    if (viewMode !== 'by-member') return new Map<number, number>();
+    const map = new Map<number, number>();
+    let i = 0;
+    while (i < displayRows.length) {
+      const mid = displayRows[i].memberId;
+      let count = 1;
+      while (i + count < displayRows.length && displayRows[i + count].memberId === mid) count++;
+      map.set(i, count);
+      i += count;
+    }
+    return map;
+  }, [displayRows, viewMode]);
 
-  const hasFilters = (memberFilter && memberFilter !== 'all') || (projectFilter && projectFilter !== 'all') || (statusFilter && statusFilter !== 'all');
+  // 각 행이 첫 번째 행인지 확인
+  const getFirstInGroup = (idx: number, mode: ViewMode) => {
+    if (mode === 'by-project') {
+      return projectRowSpanMap.has(idx);
+    }
+    return memberRowSpanMap.has(idx);
+  };
+
+  const getRowSpan = (idx: number, mode: ViewMode) => {
+    if (mode === 'by-project') return projectRowSpanMap.get(idx) ?? 1;
+    return memberRowSpanMap.get(idx) ?? 1;
+  };
 
   return (
     <div>
-      {/* 주차 선택기 + Excel 버튼 */}
+      {/* 주차 선택기 */}
       <div
         className="bg-white rounded-lg border border-[var(--gray-border)] flex items-center gap-3 mb-4"
         style={{ padding: '10px 16px' }}
@@ -169,176 +307,261 @@ export default function PartStatus() {
         >
           ▶
         </button>
-
-        <div className="w-px h-5 bg-[var(--gray-border)]" />
-
-        {/* 작성현황 인디케이터 */}
-        <span className="text-[12px] text-[var(--text-sub)]">
-          제출 <strong className="text-[var(--text)]">{submittedCount}</strong> / {totalCount}
-        </span>
-
-        <Button size="small" variant="outline" onClick={handleExcel} disabled={isDownloading}>
-          {isDownloading ? '다운로드 중...' : 'Excel 내보내기'}
-        </Button>
       </div>
 
-      {/* 필터 바: 팀원 / 프로젝트 / 상태 + 초기화 */}
+      {/* 필터 바 */}
       <div className="bg-white rounded-lg border border-[var(--gray-border)] p-3 mb-4">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[12px] font-medium text-[var(--text-sub)] mr-1">필터</span>
+        <div className="flex items-start gap-4 flex-wrap">
 
-          {/* 팀원 필터 */}
-          <Select value={memberFilter || 'all'} onValueChange={(v) => setMemberFilter(v === 'all' ? '' : v)}>
-            <SelectTrigger className="w-[120px] h-[30px] text-[12.5px]">
-              <SelectValue placeholder="전체 팀원" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">전체 팀원</SelectItem>
-              {memberOptions.map((m) => (
-                <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* 그룹 A: 인원 필터 */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-semibold text-[var(--text-sub)] whitespace-nowrap">인원</span>
 
-          {/* 프로젝트 필터 */}
-          <Select value={projectFilter || 'all'} onValueChange={(v) => setProjectFilter(v === 'all' ? '' : v)}>
-            <SelectTrigger className="w-[160px] h-[30px] text-[12.5px]">
-              <SelectValue placeholder="전체 프로젝트" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">전체 프로젝트</SelectItem>
-              {projectOptions.map((p) => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {/* 파트 선택 */}
+            {isLeader ? (
+              <Select value={selectedPartId} onValueChange={handlePartChange}>
+                <SelectTrigger className="w-[120px] h-[30px] text-[12.5px]">
+                  <SelectValue placeholder="전체 파트" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">전체 파트</SelectItem>
+                  {partOptions.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <span className="text-[12.5px] font-medium text-[var(--text)] px-2 py-1 bg-[var(--tbl-header)] rounded border border-[var(--gray-border)]">
+                {user?.partName}
+              </span>
+            )}
 
-          {/* 상태 필터 */}
-          <Select value={statusFilter || 'all'} onValueChange={(v) => setStatusFilter(v === 'all' ? '' : v)}>
-            <SelectTrigger className="w-[120px] h-[30px] text-[12.5px]">
-              <SelectValue placeholder="전체 상태" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">전체 상태</SelectItem>
-              <SelectItem value="SUBMITTED">제출완료</SelectItem>
-              <SelectItem value="DRAFT">임시저장</SelectItem>
-              <SelectItem value="NOT_STARTED">미작성</SelectItem>
-            </SelectContent>
-          </Select>
+            {/* 팀원 선택 (파트 선택에 종속) */}
+            <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
+              <SelectTrigger className="w-[110px] h-[30px] text-[12.5px]">
+                <SelectValue placeholder="전체 팀원" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체 팀원</SelectItem>
+                {availableMembers.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 구분선 */}
+          <div className="w-px h-[30px] bg-[var(--gray-border)]" />
+
+          {/* 그룹 B: 프로젝트 필터 */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-[var(--text-sub)] whitespace-nowrap">프로젝트</span>
+            <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+              <SelectTrigger className="w-[180px] h-[30px] text-[12.5px]">
+                <SelectValue placeholder="전체 프로젝트" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체 프로젝트</SelectItem>
+                {projectOptions.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name} ({p.code})</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* 초기화 버튼 */}
           {hasFilters && (
-            <Button
-              size="small"
-              variant="outline"
-              onClick={() => { setMemberFilter(''); setProjectFilter(''); setStatusFilter(''); }}
-            >
+            <Button size="small" variant="outline" onClick={handleReset}>
               초기화
             </Button>
           )}
         </div>
       </div>
 
-      {/* 파트원 작성 현황 바 */}
-      <div className="bg-white rounded-lg border border-[var(--gray-border)] px-4 py-3 mb-4">
-        <p className="text-[11px] font-medium text-[var(--text-sub)] mb-2">파트원 작성 현황</p>
-        <div className="flex flex-wrap gap-2">
-          {(submissionList as SubmissionStatus[]).map((s) => {
-            const info = STATUS_INFO[s.status] ?? STATUS_INFO.NOT_STARTED;
-            return (
-              <div key={s.memberId} className="flex items-center gap-1.5">
-                <span className="text-[11px]">{info.icon}</span>
-                <span className="text-[11px] text-[var(--text)]">{s.memberName}</span>
-                <Badge variant={info.variant}>{info.label}</Badge>
-              </div>
-            );
-          })}
-          {submissionList.length === 0 && (
-            <span className="text-[11px] text-[var(--text-sub)]">파트원이 없습니다.</span>
-          )}
-        </div>
-      </div>
-
       {/* 업무 현황 테이블 패널 */}
       <div className="bg-white rounded-lg border border-[var(--gray-border)] overflow-hidden">
+        {/* 패널 헤더: 제목 + 뷰 모드 토글 */}
         <div
           className="flex items-center justify-between border-b border-[var(--gray-border)]"
           style={{ padding: '11px 16px' }}
         >
-          <p className="text-[13px] font-semibold text-[var(--text)]">파트 업무 현황</p>
-          <p className="text-[12px] text-[var(--text-sub)]">{currentWeek}</p>
+          <p className="text-[13px] font-semibold text-[var(--text)]">업무현황</p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setViewMode('by-project')}
+              className={[
+                'px-3 py-1 text-[12px] rounded border transition-colors',
+                viewMode === 'by-project'
+                  ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
+                  : 'bg-white text-[var(--text-sub)] border-[var(--gray-border)] hover:border-[var(--primary)]',
+              ].join(' ')}
+            >
+              프로젝트별
+            </button>
+            <button
+              onClick={() => setViewMode('by-member')}
+              className={[
+                'px-3 py-1 text-[12px] rounded border transition-colors',
+                viewMode === 'by-member'
+                  ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
+                  : 'bg-white text-[var(--text-sub)] border-[var(--gray-border)] hover:border-[var(--primary)]',
+              ].join(' ')}
+            >
+              팀원별
+            </button>
+          </div>
         </div>
-        <table className="w-full" style={{ tableLayout: 'fixed' }}>
-          <colgroup>
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '29%' }} />
-            <col style={{ width: '23%' }} />
-            <col style={{ width: '12%' }} />
-          </colgroup>
-          <thead>
-            <tr className="bg-[var(--tbl-header)] border-b border-[var(--gray-border)]">
-              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">성명</th>
-              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">상태</th>
-              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">프로젝트</th>
-              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">코드</th>
-              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">진행업무 (한일)</th>
-              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">예정업무 (할일)</th>
-              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">비고 및 이슈</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={7} className="text-center py-10 text-[var(--text-sub)]">로딩 중...</td>
+
+        {/* 프로젝트별 보기 테이블 */}
+        {viewMode === 'by-project' && (
+          <table className="w-full" style={{ tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: '18%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '30%' }} />
+              <col style={{ width: '24%' }} />
+              <col style={{ width: '12%' }} />
+            </colgroup>
+            <thead>
+              <tr className="bg-[var(--tbl-header)] border-b border-[var(--gray-border)]">
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">프로젝트</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">팀원</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">파트</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">진행업무 (한일)</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">예정업무 (할일)</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">비고</th>
               </tr>
-            )}
-            {!isLoading && rows.length === 0 && (
-              <tr>
-                <td colSpan={7} className="text-center py-10 text-[var(--text-sub)]">업무 데이터가 없습니다.</td>
-              </tr>
-            )}
-            {rows.map((row, idx) => (
-              <tr
-                key={idx}
-                className={['border-b border-[var(--gray-border)]', idx % 2 === 1 ? 'bg-[var(--row-alt)]' : ''].join(' ')}
-              >
-                {/* 이름 컬럼: rowspan 병합 */}
-                {row.isFirstInMember && (
-                  <td
-                    rowSpan={row.memberRowSpan}
-                    className="px-3 py-[9px] align-top font-medium text-[12.5px] border-r border-[var(--gray-border)]"
+            </thead>
+            <tbody>
+              {isLoading && (
+                <tr>
+                  <td colSpan={6} className="text-center py-10 text-[var(--text-sub)]">로딩 중...</td>
+                </tr>
+              )}
+              {!isLoading && displayRows.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-10 text-[var(--text-sub)]">업무 데이터가 없습니다.</td>
+                </tr>
+              )}
+              {displayRows.map((row, idx) => {
+                const isFirst = getFirstInGroup(idx, 'by-project');
+                const rowSpan = getRowSpan(idx, 'by-project');
+                return (
+                  <tr
+                    key={`${row.projectId}-${row.memberId}-${idx}`}
+                    className={['border-b border-[var(--gray-border)]', idx % 2 === 1 ? 'bg-[var(--row-alt)]' : ''].join(' ')}
                   >
-                    {row.member.name}
-                  </td>
-                )}
-                {/* 상태 컬럼: rowspan 병합 */}
-                {row.isFirstInMember && (
-                  <td
-                    rowSpan={row.memberRowSpan}
-                    className="px-3 py-[9px] align-top border-r border-[var(--gray-border)]"
-                  >
-                    {(() => {
-                      const info = STATUS_INFO[row.reportStatus] ?? STATUS_INFO.NOT_STARTED;
-                      return <Badge variant={info.variant}>{info.label}</Badge>;
-                    })()}
-                  </td>
-                )}
-                <td className="px-3 py-[9px] align-top text-[12.5px]">{row.item?.project?.name ?? ''}</td>
-                <td className="px-3 py-[9px] align-top font-mono text-[11px] text-[var(--text-sub)]">{row.item?.project?.code ?? ''}</td>
-                <td className="px-3 py-[9px] align-top">
-                  <FormattedText text={row.item?.doneWork ?? ''} />
-                </td>
-                <td className="px-3 py-[9px] align-top">
-                  <FormattedText text={row.item?.planWork ?? ''} />
-                </td>
-                <td className="px-3 py-[9px] align-top text-[11px] text-[var(--text-sub)]">{row.item?.remarks ?? ''}</td>
+                    {isFirst && (
+                      <td
+                        rowSpan={rowSpan}
+                        className="px-3 py-[9px] align-top border-r border-[var(--gray-border)]"
+                      >
+                        <span className="text-[12.5px] font-medium text-[var(--text)] block leading-snug">
+                          {row.projectName}
+                        </span>
+                        {row.projectCode && (
+                          <span className="font-mono text-[10.5px] text-[var(--text-sub)]">
+                            {row.projectCode}
+                          </span>
+                        )}
+                      </td>
+                    )}
+                    <td className="px-3 py-[9px] align-top text-[12.5px] font-medium text-[var(--text)]">{row.memberName}</td>
+                    <td className="px-3 py-[9px] align-top text-[12px] text-[var(--text-sub)]">{row.partName}</td>
+                    <td className="px-3 py-[9px] align-top">
+                      <FormattedText text={row.doneWork} />
+                    </td>
+                    <td className="px-3 py-[9px] align-top">
+                      <FormattedText text={row.planWork} />
+                    </td>
+                    <td className="px-3 py-[9px] align-top text-[11px] text-[var(--text-sub)]">{row.remarks}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+
+        {/* 팀원별 보기 테이블 */}
+        {viewMode === 'by-member' && (
+          <table className="w-full" style={{ tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '18%' }} />
+              <col style={{ width: '30%' }} />
+              <col style={{ width: '24%' }} />
+              <col style={{ width: '12%' }} />
+            </colgroup>
+            <thead>
+              <tr className="bg-[var(--tbl-header)] border-b border-[var(--gray-border)]">
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">팀원</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">파트</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">프로젝트</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">진행업무 (한일)</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">예정업무 (할일)</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">비고</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {isLoading && (
+                <tr>
+                  <td colSpan={6} className="text-center py-10 text-[var(--text-sub)]">로딩 중...</td>
+                </tr>
+              )}
+              {!isLoading && displayRows.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-10 text-[var(--text-sub)]">업무 데이터가 없습니다.</td>
+                </tr>
+              )}
+              {displayRows.map((row, idx) => {
+                const isFirst = getFirstInGroup(idx, 'by-member');
+                const rowSpan = getRowSpan(idx, 'by-member');
+                return (
+                  <tr
+                    key={`${row.memberId}-${row.projectId}-${idx}`}
+                    className={['border-b border-[var(--gray-border)]', idx % 2 === 1 ? 'bg-[var(--row-alt)]' : ''].join(' ')}
+                  >
+                    {isFirst && (
+                      <td
+                        rowSpan={rowSpan}
+                        className="px-3 py-[9px] align-top font-medium text-[12.5px] border-r border-[var(--gray-border)]"
+                      >
+                        {row.memberName}
+                      </td>
+                    )}
+                    {isFirst && (
+                      <td
+                        rowSpan={rowSpan}
+                        className="px-3 py-[9px] align-top text-[12px] text-[var(--text-sub)] border-r border-[var(--gray-border)]"
+                      >
+                        {row.partName}
+                      </td>
+                    )}
+                    <td className="px-3 py-[9px] align-top">
+                      <span className="text-[12.5px] font-medium text-[var(--text)] block leading-snug">
+                        {row.projectName}
+                      </span>
+                      {row.projectCode && (
+                        <span className="font-mono text-[10.5px] text-[var(--text-sub)]">
+                          {row.projectCode}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-[9px] align-top">
+                      <FormattedText text={row.doneWork} />
+                    </td>
+                    <td className="px-3 py-[9px] align-top">
+                      <FormattedText text={row.planWork} />
+                    </td>
+                    <td className="px-3 py-[9px] align-top text-[11px] text-[var(--text-sub)]">{row.remarks}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

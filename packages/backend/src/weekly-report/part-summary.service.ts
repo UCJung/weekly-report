@@ -147,6 +147,7 @@ export class PartSummaryService {
     const members = await this.prisma.member.findMany({
       where: { partId, isActive: true },
       include: {
+        part: true,
         weeklyReports: {
           where: { weekStart: start },
           include: {
@@ -164,9 +165,57 @@ export class PartSummaryService {
         id: member.id,
         name: member.name,
         role: member.role,
+        partId: member.partId,
+        partName: member.part.name,
       },
       report: member.weeklyReports[0] ?? null,
     }));
+  }
+
+  async getTeamMembersWeeklyStatus(teamId: string, week: string) {
+    const { start } = getWeekRange(week);
+
+    const parts = await this.prisma.part.findMany({
+      where: { teamId },
+      include: {
+        members: {
+          where: { isActive: true },
+          include: {
+            weeklyReports: {
+              where: { weekStart: start },
+              include: {
+                workItems: {
+                  include: { project: true },
+                  orderBy: { sortOrder: 'asc' },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const result: Array<{
+      member: { id: string; name: string; role: string; partId: string; partName: string };
+      report: typeof parts[0]['members'][0]['weeklyReports'][0] | null;
+    }> = [];
+
+    for (const part of parts) {
+      for (const member of part.members) {
+        result.push({
+          member: {
+            id: member.id,
+            name: member.name,
+            role: member.role,
+            partId: part.id,
+            partName: part.name,
+          },
+          report: member.weeklyReports[0] ?? null,
+        });
+      }
+    }
+
+    return result;
   }
 
   async getPartSubmissionStatus(partId: string, week: string) {

@@ -7,6 +7,7 @@ export interface Project {
   category: 'COMMON' | 'EXECUTION';
   status: 'ACTIVE' | 'HOLD' | 'COMPLETED';
   teamId: string;
+  sortOrder: number;
 }
 
 export interface ProjectFilters {
@@ -29,6 +30,7 @@ export interface UpdateProjectDto {
   code?: string;
   category?: 'COMMON' | 'EXECUTION';
   status?: 'ACTIVE' | 'HOLD' | 'COMPLETED';
+  sortOrder?: number;
 }
 
 export const projectApi = {

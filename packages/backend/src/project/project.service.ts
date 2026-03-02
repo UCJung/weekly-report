@@ -21,7 +21,7 @@ export class ProjectService {
     const [data, total] = await Promise.all([
       this.prisma.project.findMany({
         where,
-        orderBy: [{ category: 'asc' }, { name: 'asc' }],
+        orderBy: [{ sortOrder: 'asc' }, { category: 'asc' }, { name: 'asc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),

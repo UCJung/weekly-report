@@ -2,7 +2,7 @@ import apiClient from './client';
 import { WorkItem } from './weekly-report.api';
 
 export interface MemberWeeklyStatus {
-  member: { id: string; name: string; role: string };
+  member: { id: string; name: string; role: string; partId: string; partName: string };
   report: {
     id: string;
     weekLabel: string;
@@ -71,6 +71,11 @@ export const partApi = {
 
   getTeamWeeklyOverview: (teamId: string, week: string) =>
     apiClient.get<{ data: TeamWeeklyOverview[] }>(`/teams/${teamId}/weekly-overview`, {
+      params: { week },
+    }),
+
+  getTeamMembersWeeklyStatus: (teamId: string, week: string) =>
+    apiClient.get<{ data: MemberWeeklyStatus[] }>(`/teams/${teamId}/members-weekly-status`, {
       params: { week },
     }),
 };

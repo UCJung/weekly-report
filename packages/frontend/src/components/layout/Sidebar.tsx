@@ -42,7 +42,7 @@ const MENU_GROUPS: MenuGroup[] = [
     items: [
       {
         path: '/part-status',
-        label: '파트 업무 현황',
+        label: '업무현황',
         icon: <Users size={14} />,
         roles: ['LEADER', 'PART_LEADER'],
       },

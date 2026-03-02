@@ -15,8 +15,8 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
     subtitle: '지난 주간업무 이력을 조회합니다',
   },
   '/part-status': {
-    title: '파트 업무 현황',
-    subtitle: '파트 구성원의 이번 주 업무 현황을 확인합니다',
+    title: '업무현황',
+    subtitle: '파트 및 팀 구성원의 주간 업무 현황을 확인합니다',
   },
   '/part-summary': {
     title: '파트 취합보고서',
