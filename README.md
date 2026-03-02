@@ -119,14 +119,30 @@ weekly-report/
 └── docs/               # 설계 문서
 ```
 
-## 시드 계정
+## 테스트 계정
 
-DB 시드 후 아래 계정으로 로그인 가능:
+DB 시드(`bunx prisma db seed`) 실행 후 아래 계정으로 로그인할 수 있습니다.
 
-| 이름 | 역할 | 이메일 |
-|------|------|--------|
-| 정우철 | LEADER (팀장) | jungwoochul@example.com |
-| 문선홍 | PART_LEADER (DX 파트장) | moonseunghong@example.com |
-| 기타 팀원 | MEMBER | (seed.ts 참고) |
+**공통 비밀번호**: `password123`
 
-기본 비밀번호: `Test1234!`
+| 이름 | 이메일 | 역할 | 파트 |
+|------|--------|------|------|
+| 정우철 | wc.jung@example.com | 팀장 (LEADER) | DX |
+| 문선홍 | sh.moon@example.com | 파트장 (PART_LEADER) | AX |
+| 이성전 | sj.lee@example.com | 팀원 (MEMBER) | DX |
+| 김영상 | ys.kim@example.com | 팀원 (MEMBER) | DX |
+| 권현하 | hh.kwon@example.com | 팀원 (MEMBER) | DX |
+| 김지환 | jh.kim@example.com | 팀원 (MEMBER) | AX |
+| 송하은 | he.song@example.com | 팀원 (MEMBER) | AX |
+| 최혜주 | hj.choi@example.com | 팀원 (MEMBER) | AX |
+| 정원희 | wh.jung@example.com | 팀원 (MEMBER) | AX |
+
+### 역할별 접근 권한
+
+| 기능 | 팀장 | 파트장 | 팀원 |
+|------|:---:|:---:|:---:|
+| 본인 주간업무 작성 | O | O | O |
+| 업무현황 조회 | 전체 | 소속 파트 | - |
+| 파트 취합보고 | - | O | - |
+| 팀/프로젝트 관리 | O | - | - |
+| Excel 내보내기 | O | 소속 파트 | - |
