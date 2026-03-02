@@ -1,7 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useAuthStore } from '../stores/authStore';
 import { useUiStore } from '../stores/uiStore';
-import { useProjects, useCreateProject, useUpdateProject, useDeleteProject } from '../hooks/useProjects';
+import { useProjects, useCreateProject, useUpdateProject, useDeleteProject, useReorderProjects } from '../hooks/useProjects';
 import { Project, CreateProjectDto } from '../api/project.api';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -39,6 +56,83 @@ const DEFAULT_FORM: ProjectFormData = {
   category: 'EXECUTION',
 };
 
+// ── Sortable Row Component ──────────────────────────────────
+interface SortableProjectRowProps {
+  project: Project;
+  isDndActive: boolean;
+  idx: number;
+  onEdit: (p: Project) => void;
+  onDelete: (p: Project) => void;
+}
+
+function SortableProjectRow({ project, isDndActive, idx, onEdit, onDelete }: SortableProjectRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: project.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className={[
+        'border-b border-[var(--gray-border)] hover:bg-[var(--row-alt)]',
+        idx % 2 === 1 ? 'bg-[var(--row-alt)]' : '',
+        isDragging ? 'shadow-lg z-10 relative' : '',
+      ].join(' ')}
+    >
+      <td className="px-3 py-[9px] text-center">
+        {isDndActive ? (
+          <span
+            {...attributes}
+            {...listeners}
+            className="inline-flex items-center justify-center w-5 h-5 cursor-grab active:cursor-grabbing text-[var(--text-sub)] hover:text-[var(--text)]"
+            title="드래그하여 순서 변경"
+          >
+            ⠿
+          </span>
+        ) : (
+          <span className="text-[var(--text-sub)] text-[11px]">{project.sortOrder + 1}</span>
+        )}
+      </td>
+      <td className="px-3 py-[9px] text-[12.5px] font-medium">{project.name}</td>
+      <td className="px-3 py-[9px] text-[12.5px] text-[var(--text-sub)] font-mono">{project.code}</td>
+      <td className="px-3 py-[9px]">
+        <Badge variant={project.category === 'COMMON' ? 'purple' : 'blue'}>
+          {CATEGORY_LABELS[project.category]}
+        </Badge>
+      </td>
+      <td className="px-3 py-[9px]">
+        <Badge variant={STATUS_BADGE[project.status] ?? 'gray'}>
+          {STATUS_LABELS[project.status]}
+        </Badge>
+      </td>
+      <td className="px-3 py-[9px] text-center text-[12.5px] text-[var(--text-sub)]">
+        {(project as Project & { memberCount?: number }).memberCount ?? '—'}
+      </td>
+      <td className="px-3 py-[9px] text-right">
+        <div className="flex justify-end gap-1">
+          <Button size="small" variant="outline" onClick={() => onEdit(project)}>수정</Button>
+          {project.status !== 'COMPLETED' && (
+            <Button size="small" variant="ghost-danger" onClick={() => onDelete(project)}>삭제</Button>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+// ── Main Component ──────────────────────────────────────────
 export default function ProjectMgmt() {
   const { user } = useAuthStore();
   const { addToast } = useUiStore();
@@ -53,6 +147,7 @@ export default function ProjectMgmt() {
   const [form, setForm] = useState<ProjectFormData>(DEFAULT_FORM);
   const [formError, setFormError] = useState('');
   const [deleteWarning, setDeleteWarning] = useState('');
+  const [localProjects, setLocalProjects] = useState<Project[]>([]);
 
   const { data, isLoading } = useProjects({
     teamId,
@@ -61,14 +156,55 @@ export default function ProjectMgmt() {
   });
   const projects = data?.data ?? [];
 
+  // Sync server data to local state for DnD optimistic updates
+  useEffect(() => {
+    setLocalProjects(projects);
+  }, [data]);
+
   const createMutation = useCreateProject();
   const updateMutation = useUpdateProject();
   const deleteMutation = useDeleteProject();
+  const reorderMutation = useReorderProjects();
 
-  const filteredProjects = projects.filter((p) => {
-    if (searchText && !p.name.includes(searchText) && !p.code.includes(searchText)) return false;
-    return true;
-  });
+  // DnD is active only when no filters are applied
+  const hasFilters = !!categoryFilter || !!statusFilter || !!searchText;
+  const isDndActive = !hasFilters;
+
+  const filteredProjects = isDndActive
+    ? localProjects
+    : localProjects.filter((p) => {
+        if (searchText && !p.name.includes(searchText) && !p.code.includes(searchText)) return false;
+        return true;
+      });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = localProjects.findIndex((p) => p.id === active.id);
+    const newIndex = localProjects.findIndex((p) => p.id === over.id);
+    const newOrder = arrayMove(localProjects, oldIndex, newIndex);
+
+    // Optimistic update
+    setLocalProjects(newOrder);
+
+    try {
+      await reorderMutation.mutateAsync({
+        teamId,
+        orderedIds: newOrder.map((p) => p.id),
+      });
+    } catch {
+      addToast('danger', '순서 변경에 실패했습니다.');
+      setLocalProjects(localProjects); // rollback
+    }
+  };
 
   const commonCount = projects.filter((p) => p.category === 'COMMON').length;
   const execCount = projects.filter((p) => p.category === 'EXECUTION').length;
@@ -136,7 +272,7 @@ export default function ProjectMgmt() {
 
   return (
     <div>
-      {/* 요약 카드 — grid-cols-3 통합 */}
+      {/* 요약 카드 */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         <SummaryCard label="전체 프로젝트" value={projects.length} iconBg="var(--primary-bg)" />
         <SummaryCard label="공통 과제" value={commonCount} iconBg="var(--primary-bg)" />
@@ -182,6 +318,11 @@ export default function ProjectMgmt() {
             <Button onClick={openCreate}>+ 프로젝트 등록</Button>
           </div>
         </div>
+        {hasFilters && (
+          <p className="text-[11px] text-[var(--warn)] mt-2">
+            필터를 초기화해야 순서를 변경할 수 있습니다.
+          </p>
+        )}
       </div>
 
       {/* 테이블 패널 */}
@@ -193,63 +334,52 @@ export default function ProjectMgmt() {
           <p className="text-[13px] font-semibold text-[var(--text)]">프로젝트 목록</p>
           <p className="text-[12px] text-[var(--text-sub)]">총 {filteredProjects.length}건</p>
         </div>
-        <table className="w-full">
-          <thead>
-            <tr className="bg-[var(--tbl-header)] border-b border-[var(--gray-border)]">
-              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">프로젝트명</th>
-              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">코드</th>
-              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">분류</th>
-              <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">상태</th>
-              <th className="text-center px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">참여인원</th>
-              <th className="text-right px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">액션</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={6} className="text-center py-10 text-[var(--text-sub)]">로딩 중...</td>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <table className="w-full">
+            <thead>
+              <tr className="bg-[var(--tbl-header)] border-b border-[var(--gray-border)]">
+                <th className="text-center px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)] w-12">순서</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">프로젝트명</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">코드</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">분류</th>
+                <th className="text-left px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">상태</th>
+                <th className="text-center px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">참여인원</th>
+                <th className="text-right px-3 py-[9px] text-[12px] font-semibold text-[var(--text-sub)]">액션</th>
               </tr>
-            )}
-            {!isLoading && filteredProjects.length === 0 && (
-              <tr>
-                <td colSpan={6} className="text-center py-10 text-[var(--text-sub)]">프로젝트가 없습니다.</td>
-              </tr>
-            )}
-            {filteredProjects.map((project, idx) => (
-              <tr
-                key={project.id}
-                className={[
-                  'border-b border-[var(--gray-border)] hover:bg-[var(--row-alt)]',
-                  idx % 2 === 1 ? 'bg-[var(--row-alt)]' : '',
-                ].join(' ')}
+            </thead>
+            <tbody>
+              {isLoading && (
+                <tr>
+                  <td colSpan={7} className="text-center py-10 text-[var(--text-sub)]">로딩 중...</td>
+                </tr>
+              )}
+              {!isLoading && filteredProjects.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="text-center py-10 text-[var(--text-sub)]">프로젝트가 없습니다.</td>
+                </tr>
+              )}
+              <SortableContext
+                items={filteredProjects.map((p) => p.id)}
+                strategy={verticalListSortingStrategy}
               >
-                <td className="px-3 py-[9px] text-[12.5px] font-medium">{project.name}</td>
-                <td className="px-3 py-[9px] text-[12.5px] text-[var(--text-sub)] font-mono">{project.code}</td>
-                <td className="px-3 py-[9px]">
-                  <Badge variant={project.category === 'COMMON' ? 'purple' : 'blue'}>
-                    {CATEGORY_LABELS[project.category]}
-                  </Badge>
-                </td>
-                <td className="px-3 py-[9px]">
-                  <Badge variant={STATUS_BADGE[project.status] ?? 'gray'}>
-                    {STATUS_LABELS[project.status]}
-                  </Badge>
-                </td>
-                <td className="px-3 py-[9px] text-center text-[12.5px] text-[var(--text-sub)]">
-                  {(project as Project & { memberCount?: number }).memberCount ?? '—'}
-                </td>
-                <td className="px-3 py-[9px] text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button size="small" variant="outline" onClick={() => openEdit(project)}>수정</Button>
-                    {project.status !== 'COMPLETED' && (
-                      <Button size="small" variant="ghost-danger" onClick={() => openDelete(project)}>삭제</Button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                {filteredProjects.map((project, idx) => (
+                  <SortableProjectRow
+                    key={project.id}
+                    project={project}
+                    isDndActive={isDndActive}
+                    idx={idx}
+                    onEdit={openEdit}
+                    onDelete={openDelete}
+                  />
+                ))}
+              </SortableContext>
+            </tbody>
+          </table>
+        </DndContext>
       </div>
 
       {/* 등록/수정 모달 */}

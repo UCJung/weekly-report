@@ -38,3 +38,14 @@ export function useDeleteProject() {
     },
   });
 }
+
+export function useReorderProjects() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { teamId: string; orderedIds: string[] }) =>
+      projectApi.reorderProjects(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+}

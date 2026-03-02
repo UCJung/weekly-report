@@ -37,3 +37,13 @@ export function useUpdateMember(teamId: string) {
     },
   });
 }
+
+export function useReorderParts(teamId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (orderedIds: string[]) => teamApi.reorderParts(teamId, orderedIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['parts', teamId] });
+    },
+  });
+}

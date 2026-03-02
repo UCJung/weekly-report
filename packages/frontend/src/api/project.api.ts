@@ -50,4 +50,7 @@ export const projectApi = {
 
   deleteProject: (id: string) =>
     apiClient.delete<{ data: Project & { _warning?: string } }>(`/projects/${id}`),
+
+  reorderProjects: (data: { teamId: string; orderedIds: string[] }) =>
+    apiClient.patch('/projects/reorder', data),
 };
