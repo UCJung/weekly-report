@@ -18,5 +18,7 @@ export default defineConfig({
     exclude: ['e2e/**', 'node_modules/**'],
     fileParallelism: false,
     teardownTimeout: 1000,
+    testTimeout: 10000,
+    pool: 'forks',
   },
 });

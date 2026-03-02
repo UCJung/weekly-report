@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { projectApi, ProjectFilters, CreateProjectDto, UpdateProjectDto } from '../api/project.api';
+import { projectApi, ProjectFilters } from '../api/project.api';
 
 export function useProjects(filters: ProjectFilters = {}) {
   return useQuery({
@@ -8,44 +8,43 @@ export function useProjects(filters: ProjectFilters = {}) {
   });
 }
 
-export function useCreateProject() {
+export function useTeamProjects(teamId: string) {
+  return useQuery({
+    queryKey: ['team-projects', teamId],
+    queryFn: () => projectApi.getTeamProjects(teamId).then((r) => r.data.data),
+    enabled: !!teamId,
+  });
+}
+
+export function useAddTeamProjects(teamId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: CreateProjectDto) => projectApi.createProject(data).then((r) => r.data.data),
+    mutationFn: (projectIds: string[]) =>
+      projectApi.addTeamProjects(teamId, projectIds).then((r) => r.data.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['team-projects', teamId] });
     },
   });
 }
 
-export function useUpdateProject() {
+export function useRemoveTeamProject(teamId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateProjectDto }) =>
-      projectApi.updateProject(id, data).then((r) => r.data.data),
+    mutationFn: (projectId: string) =>
+      projectApi.removeTeamProject(teamId, projectId).then((r) => r.data.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['team-projects', teamId] });
     },
   });
 }
 
-export function useDeleteProject() {
+export function useReorderTeamProjects(teamId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => projectApi.deleteProject(id).then((r) => r.data.data),
+    mutationFn: (orderedIds: string[]) =>
+      projectApi.reorderTeamProjects(teamId, orderedIds),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-    },
-  });
-}
-
-export function useReorderProjects() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: { teamId: string; orderedIds: string[] }) =>
-      projectApi.reorderProjects(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['team-projects', teamId] });
     },
   });
 }
