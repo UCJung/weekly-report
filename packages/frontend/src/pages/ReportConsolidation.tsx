@@ -172,14 +172,14 @@ export default function ReportConsolidation() {
   // ── Handlers ──
 
   const handleExcelDownload = async () => {
-    if (exporting) return;
+    if (exporting || !summary) return;
     setExporting(true);
     try {
-      if (scope === 'TEAM') {
-        await exportApi.downloadExcel({ type: 'team', teamId, week: currentWeek });
-      } else {
-        await exportApi.downloadExcel({ type: 'part', partId: selectedPartId, week: currentWeek });
-      }
+      await exportApi.downloadExcel({
+        type: 'summary',
+        summaryId: summary.id,
+        week: currentWeek,
+      });
       addToast('success', 'Excel 파일을 다운로드했습니다.');
     } catch {
       addToast('danger', 'Excel 다운로드에 실패했습니다.');
@@ -239,6 +239,23 @@ export default function ReportConsolidation() {
 
   const isSubmitted = summary?.status === 'SUBMITTED';
   const items: SummaryWorkItem[] = summary?.summaryWorkItems ?? [];
+
+  // 제출 조회 시 같은 프로젝트 행 rowspan 계산
+  const projectRowSpans = useMemo(() => {
+    if (!isSubmitted) return new Map<number, number>();
+    const spans = new Map<number, number>();
+    let i = 0;
+    while (i < items.length) {
+      const pid = items[i].projectId;
+      let count = 1;
+      while (i + count < items.length && items[i + count].projectId === pid) {
+        count++;
+      }
+      spans.set(i, count);
+      i += count;
+    }
+    return spans;
+  }, [isSubmitted, items]);
 
   // 같은 프로젝트 2개 이상 선택 시 병합 가능
   const canMerge = useMemo(() => {
@@ -441,7 +458,10 @@ export default function ReportConsolidation() {
                   </td>
                 </tr>
               )}
-              {items.map((item, idx) => (
+              {items.map((item, idx) => {
+                const rowSpan = projectRowSpans.get(idx);
+                const showProjectCell = !isSubmitted || rowSpan !== undefined;
+                return (
                 <tr
                   key={item.id}
                   className={[
@@ -459,9 +479,15 @@ export default function ReportConsolidation() {
                       />
                     </td>
                   )}
-                  <td className="px-3 py-[8px] align-top text-[12.5px] font-medium text-[var(--text)]">
+                  {showProjectCell && (
+                  <td
+                    className="px-3 py-[8px] align-top text-[12.5px] font-medium text-[var(--text)]"
+                    rowSpan={isSubmitted ? rowSpan : undefined}
+                    style={isSubmitted && rowSpan && rowSpan > 1 ? { borderRight: '1px solid var(--gray-border)', verticalAlign: 'middle' } : undefined}
+                  >
                     {item.project?.name ?? '—'}
                   </td>
+                  )}
                   <td className="px-3 py-[8px] align-top text-[11px] text-[var(--text-sub)]">
                     {item.memberNames ?? '—'}
                   </td>
@@ -510,7 +536,8 @@ export default function ReportConsolidation() {
                     </td>
                   )}
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}

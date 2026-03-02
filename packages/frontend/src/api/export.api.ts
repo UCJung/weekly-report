@@ -1,9 +1,10 @@
 import apiClient from './client';
 
 export interface ExportOptions {
-  type: 'part' | 'team';
+  type: 'part' | 'team' | 'summary';
   partId?: string;
   teamId?: string;
+  summaryId?: string;
   week: string;
 }
 

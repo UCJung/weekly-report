@@ -3,10 +3,11 @@ import { IsEnum, IsOptional, IsString, Matches } from 'class-validator';
 export enum ExportType {
   PART = 'part',
   TEAM = 'team',
+  SUMMARY = 'summary',
 }
 
 export class ExportQueryDto {
-  @IsEnum(ExportType, { message: 'type은 part 또는 team 이어야 합니다.' })
+  @IsEnum(ExportType, { message: 'type은 part, team 또는 summary 이어야 합니다.' })
   type: ExportType;
 
   @IsOptional()
@@ -20,4 +21,8 @@ export class ExportQueryDto {
   @IsOptional()
   @IsString()
   teamId?: string;
+
+  @IsOptional()
+  @IsString()
+  summaryId?: string;
 }
