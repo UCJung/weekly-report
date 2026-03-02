@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useAdminAccounts, useUpdateAccountStatus } from '../../hooks/useAdmin';
+import React, { useState, useDeferredValue } from 'react';
+import { Search } from 'lucide-react';
+import { useAdminAccounts, useUpdateAccountStatus, useResetPassword } from '../../hooks/useAdmin';
 import { AccountStatus, AdminAccount } from '../../api/admin.api';
 import { useUiStore } from '../../stores/uiStore';
 import Badge from '../../components/ui/Badge';
@@ -48,10 +49,11 @@ function formatDate(dateStr: string): string {
 interface StatusActionButtonsProps {
   account: AdminAccount;
   onChangeStatus: (id: string, status: AccountStatus) => void;
+  onResetPassword: (id: string, name: string) => void;
   isPending: boolean;
 }
 
-function StatusActionButtons({ account, onChangeStatus, isPending }: StatusActionButtonsProps) {
+function StatusActionButtons({ account, onChangeStatus, onResetPassword, isPending }: StatusActionButtonsProps) {
   const { accountStatus: status, id } = account;
 
   return (
@@ -85,14 +87,24 @@ function StatusActionButtons({ account, onChangeStatus, isPending }: StatusActio
         </>
       )}
       {status === 'ACTIVE' && (
-        <Button
-          size="small"
-          variant="outline"
-          onClick={() => onChangeStatus(id, 'INACTIVE')}
-          disabled={isPending}
-        >
-          종료
-        </Button>
+        <>
+          <Button
+            size="small"
+            variant="outline"
+            onClick={() => onResetPassword(id, account.name)}
+            disabled={isPending}
+          >
+            PW초기화
+          </Button>
+          <Button
+            size="small"
+            variant="outline"
+            onClick={() => onChangeStatus(id, 'INACTIVE')}
+            disabled={isPending}
+          >
+            종료
+          </Button>
+        </>
       )}
       {status === 'INACTIVE' && (
         <Button
@@ -111,11 +123,18 @@ function StatusActionButtons({ account, onChangeStatus, isPending }: StatusActio
 export default function AccountManagement() {
   const { addToast } = useUiStore();
   const [filter, setFilter] = useState<FilterOption>('ALL');
+  const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search);
 
+  const queryParams = {
+    ...(filter !== 'ALL' && { status: filter }),
+    ...(deferredSearch && { search: deferredSearch }),
+  };
   const { data: accounts = [], isLoading } = useAdminAccounts(
-    filter === 'ALL' ? undefined : filter,
+    Object.keys(queryParams).length > 0 ? queryParams : undefined,
   );
   const updateStatusMutation = useUpdateAccountStatus();
+  const resetPasswordMutation = useResetPassword();
 
   const handleChangeStatus = async (id: string, status: AccountStatus) => {
     try {
@@ -129,29 +148,66 @@ export default function AccountManagement() {
     }
   };
 
+  const handleResetPassword = async (id: string, name: string) => {
+    if (!window.confirm(`"${name}" 계정의 비밀번호를 초기화하시겠습니까?`)) return;
+    try {
+      await resetPasswordMutation.mutateAsync(id);
+      addToast('success', `"${name}" 계정의 비밀번호가 초기화되었습니다.`);
+    } catch (e: unknown) {
+      const msg =
+        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        '비밀번호 초기화에 실패했습니다.';
+      addToast('danger', msg);
+    }
+  };
+
   return (
     <div>
       {/* 필터 바 */}
       <div className="bg-white rounded-lg border border-[var(--gray-border)] p-4 mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-[12.5px] font-medium" style={{ color: 'var(--text-sub)' }}>
-            상태 필터:
-          </span>
-          <div className="flex gap-1">
-            {FILTER_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setFilter(opt.value)}
-                className={[
-                  'px-3 py-1 text-[12px] font-medium rounded border transition-colors',
-                  filter === opt.value
-                    ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
-                    : 'bg-white text-[var(--text-sub)] border-[var(--gray-border)] hover:border-[var(--primary)] hover:text-[var(--primary)]',
-                ].join(' ')}
-              >
-                {opt.label}
-              </button>
-            ))}
+        <div className="flex items-center gap-4">
+          {/* 검색 */}
+          <div className="relative flex-shrink-0" style={{ width: 220 }}>
+            <Search
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ color: 'var(--text-sub)' }}
+            />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="성명 또는 이메일 검색"
+              className="w-full pl-8 pr-3 py-1.5 text-[12px] rounded border outline-none transition-colors"
+              style={{
+                borderColor: 'var(--gray-border)',
+                color: 'var(--text)',
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--primary)'; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--gray-border)'; }}
+            />
+          </div>
+
+          {/* 상태 필터 */}
+          <div className="flex items-center gap-2">
+            <span className="text-[12.5px] font-medium" style={{ color: 'var(--text-sub)' }}>
+              상태:
+            </span>
+            <div className="flex gap-1">
+              {FILTER_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setFilter(opt.value)}
+                  className={[
+                    'px-3 py-1 text-[12px] font-medium rounded border transition-colors',
+                    filter === opt.value
+                      ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
+                      : 'bg-white text-[var(--text-sub)] border-[var(--gray-border)] hover:border-[var(--primary)] hover:text-[var(--primary)]',
+                  ].join(' ')}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -175,6 +231,7 @@ export default function AccountManagement() {
             <TableRow>
               <TableHead>성명</TableHead>
               <TableHead>이메일</TableHead>
+              <TableHead>소속팀</TableHead>
               <TableHead>역할</TableHead>
               <TableHead>상태</TableHead>
               <TableHead>가입일</TableHead>
@@ -184,14 +241,14 @@ export default function AccountManagement() {
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10" style={{ color: 'var(--text-sub)' }}>
+                <TableCell colSpan={7} className="text-center py-10" style={{ color: 'var(--text-sub)' }}>
                   로딩 중...
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && accounts.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10" style={{ color: 'var(--text-sub)' }}>
+                <TableCell colSpan={7} className="text-center py-10" style={{ color: 'var(--text-sub)' }}>
                   계정이 없습니다.
                 </TableCell>
               </TableRow>
@@ -204,6 +261,11 @@ export default function AccountManagement() {
                 >
                   <TableCell className="font-medium text-[13px]">{account.name}</TableCell>
                   <TableCell className="text-[var(--text-sub)] text-[12px]">{account.email}</TableCell>
+                  <TableCell className="text-[12px]">
+                    {account.teams && account.teams.length > 0
+                      ? account.teams.map((t) => t.name).join(', ')
+                      : '—'}
+                  </TableCell>
                   <TableCell className="text-[12px]">{account.roles?.join(', ') ?? '—'}</TableCell>
                   <TableCell>
                     <Badge variant={STATUS_BADGE_VARIANT[account.accountStatus]}>
@@ -217,7 +279,8 @@ export default function AccountManagement() {
                     <StatusActionButtons
                       account={account}
                       onChangeStatus={handleChangeStatus}
-                      isPending={updateStatusMutation.isPending}
+                      onResetPassword={handleResetPassword}
+                      isPending={updateStatusMutation.isPending || resetPasswordMutation.isPending}
                     />
                   </TableCell>
                 </TableRow>

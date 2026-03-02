@@ -7,10 +7,10 @@ import {
   UpdateTeamStatusDto,
 } from '../api/admin.api';
 
-export function useAdminAccounts(status?: AccountStatus) {
+export function useAdminAccounts(params?: { status?: AccountStatus; search?: string }) {
   return useQuery({
-    queryKey: ['admin', 'accounts', status],
-    queryFn: () => adminApi.getAccounts(status).then((r) => r.data.data.data),
+    queryKey: ['admin', 'accounts', params],
+    queryFn: () => adminApi.getAccounts(params).then((r) => r.data.data.data),
   });
 }
 
@@ -19,6 +19,17 @@ export function useUpdateAccountStatus() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateAccountStatusDto }) =>
       adminApi.updateAccountStatus(id, data).then((r) => r.data.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'accounts'] });
+    },
+  });
+}
+
+export function useResetPassword() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      adminApi.resetPassword(id).then((r) => r.data.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'accounts'] });
     },

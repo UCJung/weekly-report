@@ -11,6 +11,7 @@ export interface AdminAccount {
   accountStatus: AccountStatus;
   mustChangePassword: boolean;
   isActive: boolean;
+  teams?: { id: string; name: string }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -36,13 +37,16 @@ export interface UpdateTeamStatusDto {
 }
 
 export const adminApi = {
-  getAccounts: (status?: AccountStatus) =>
+  getAccounts: (params?: { status?: AccountStatus; search?: string }) =>
     apiClient.get<{ data: AdminAccount[] }>('/admin/accounts', {
-      params: status ? { status } : {},
+      params: params ?? {},
     }),
 
   updateAccountStatus: (id: string, data: UpdateAccountStatusDto) =>
     apiClient.patch<{ data: AdminAccount }>(`/admin/accounts/${id}/status`, data),
+
+  resetPassword: (id: string) =>
+    apiClient.patch<{ data: unknown }>(`/admin/accounts/${id}/reset-password`),
 
   getTeams: (status?: TeamStatus) =>
     apiClient.get<{ data: AdminTeam[] }>('/admin/teams', {

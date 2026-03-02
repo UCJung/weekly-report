@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsInt, Min } from 'class-validator';
+import { IsEnum, IsOptional, IsInt, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AccountStatus } from '@prisma/client';
 
@@ -6,6 +6,10 @@ export class ListAccountsDto {
   @IsOptional()
   @IsEnum(AccountStatus)
   status?: AccountStatus;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 
   @IsOptional()
   @Type(() => Number)

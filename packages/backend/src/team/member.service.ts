@@ -10,29 +10,42 @@ export class MemberService {
   constructor(private prisma: PrismaService) {}
 
   async findByTeam(teamId: string, partId?: string) {
-    const members = await this.prisma.member.findMany({
+    const memberships = await this.prisma.teamMembership.findMany({
       where: {
-        part: { teamId },
+        teamId,
         ...(partId && { partId }),
-        isActive: true,
+        member: { isActive: true },
       },
       select: {
-        id: true,
-        name: true,
-        email: true,
-        roles: true,
+        memberId: true,
         partId: true,
-        isActive: true,
+        roles: true,
         sortOrder: true,
-        createdAt: true,
-        updatedAt: true,
         part: { select: { name: true } },
+        member: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            isActive: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
       },
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      orderBy: [{ sortOrder: 'asc' }, { member: { name: 'asc' } }],
     });
-    return members.map(({ part, ...rest }) => ({
-      ...rest,
-      partName: part?.name ?? '',
+    return memberships.map((tm) => ({
+      id: tm.member.id,
+      name: tm.member.name,
+      email: tm.member.email,
+      roles: tm.roles,
+      partId: tm.partId,
+      partName: tm.part?.name ?? '',
+      isActive: tm.member.isActive,
+      sortOrder: tm.sortOrder,
+      createdAt: tm.member.createdAt,
+      updatedAt: tm.member.updatedAt,
     }));
   }
 

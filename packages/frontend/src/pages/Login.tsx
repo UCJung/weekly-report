@@ -22,7 +22,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const { data } = await authApi.login(email, password);
+      const { data } = await authApi.login(email.trim(), password);
       const { accessToken, refreshToken, user } = data.data;
       login(accessToken, refreshToken, user as Parameters<typeof login>[2]);
 
@@ -33,8 +33,16 @@ export default function Login() {
       } else {
         navigate('/');
       }
-    } catch {
-      setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string }; status?: number } };
+      if (axiosErr?.response?.data?.message) {
+        setError(axiosErr.response.data.message);
+      } else if (axiosErr?.response?.status === 401) {
+        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+      } else {
+        setError(`로그인 실패: ${(err as Error)?.message ?? '알 수 없는 오류'}`);
+      }
+      console.error('[Login Error]', err);
     } finally {
       setLoading(false);
     }

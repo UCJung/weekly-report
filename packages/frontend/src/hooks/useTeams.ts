@@ -4,14 +4,23 @@ import { teamApi, GetTeamsParams } from '../api/team.api';
 export function useTeams(params?: GetTeamsParams) {
   return useQuery({
     queryKey: ['teams', params],
-    queryFn: () => teamApi.getTeams(params).then((r) => r.data.data),
+    queryFn: () => teamApi.getTeams(params).then((r) => r.data.data.data),
   });
 }
 
 export function useMyTeams() {
   return useQuery({
     queryKey: ['my-teams'],
-    queryFn: () => teamApi.getMyTeams().then((r) => r.data.data),
+    queryFn: () =>
+      teamApi.getMyTeams().then((r) =>
+        (r.data.data as any[]).map((t) => ({
+          id: t.teamId ?? t.id,
+          name: t.teamName ?? t.name,
+          memberCount: t.memberCount ?? 0,
+          isMember: true,
+          ...t,
+        })),
+      ),
   });
 }
 

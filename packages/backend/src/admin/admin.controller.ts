@@ -40,6 +40,11 @@ export class AdminController {
     return this.adminService.updateAccountStatus(id, dto);
   }
 
+  @Patch('accounts/:id/reset-password')
+  async resetPassword(@Param('id') id: string) {
+    return this.adminService.resetPassword(id);
+  }
+
   // ──────────────────────────────────────
   // 팀 관리
   // ──────────────────────────────────────
