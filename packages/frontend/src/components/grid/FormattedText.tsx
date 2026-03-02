@@ -51,13 +51,13 @@ export default function FormattedText({ text, className = '' }: FormattedTextPro
             );
           case 'sub':
             return (
-              <div key={idx} className="pl-2 text-[var(--text)]">
+              <div key={idx} className="text-[var(--text)]">
                 • {parsed.content}
               </div>
             );
           case 'detail':
             return (
-              <div key={idx} className="pl-[18px] text-[var(--text-sub)] text-[11.5px]">
+              <div key={idx} className="pl-2 text-[var(--text-sub)] text-[11.5px]">
                 - {parsed.content}
               </div>
             );
