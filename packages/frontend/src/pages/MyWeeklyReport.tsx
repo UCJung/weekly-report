@@ -42,7 +42,7 @@ function addWeeks(weekLabel: string, n: number): string {
   return getWeekLabel(monday);
 }
 
-function formatWeekDisplay(weekLabel: string): string {
+function formatWeekLabel(weekLabel: string): string {
   const match = weekLabel.match(/^(\d{4})-W(\d{2})$/);
   if (!match) return weekLabel;
   const year = parseInt(match[1], 10);
@@ -218,7 +218,7 @@ export default function MyWeeklyReport() {
         </button>
         <div className="flex-1 text-center">
           <span className="text-[14px] font-semibold text-[var(--text)]">
-            {formatWeekDisplay(currentWeek)}
+            {formatWeekLabel(currentWeek)}
           </span>
         </div>
         <button
@@ -327,7 +327,7 @@ export default function MyWeeklyReport() {
       >
         {prevWorkItems.length === 0 ? (
           <p className="text-[13px] text-[var(--text-sub)]">
-            전주({formatWeekDisplay(prevWeek)})의 예정업무가 없습니다.
+            전주({formatWeekLabel(prevWeek)})의 예정업무가 없습니다.
           </p>
         ) : (
           <div>

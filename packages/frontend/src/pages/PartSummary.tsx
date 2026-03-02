@@ -31,6 +31,20 @@ function addWeeks(weekLabel: string, n: number): string {
   return getWeekLabel(monday);
 }
 
+function formatWeekLabel(weekLabel: string): string {
+  const match = weekLabel.match(/^(\d{4})-W(\d{2})$/);
+  if (!match) return weekLabel;
+  const year = parseInt(match[1], 10);
+  const week = parseInt(match[2], 10);
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const jan4Day = jan4.getUTCDay() || 7;
+  const week1Monday = new Date(Date.UTC(year, 0, 4 - jan4Day + 1));
+  const start = new Date(week1Monday.getTime() + (week - 1) * 7 * 86400000);
+  const end = new Date(start.getTime() + 4 * 86400000);
+  const fmt = (d: Date) => `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
+  return `${year}년 ${week}주차 (${fmt(start)} ~ ${fmt(end)})`;
+}
+
 type EditingCell = { rowId: string; column: 'doneWork' | 'planWork' | 'remarks' } | null;
 
 export default function PartSummary() {
@@ -169,7 +183,7 @@ export default function PartSummary() {
           ◀
         </button>
         <span className="flex-1 text-center text-[14px] font-semibold text-[var(--text)]">
-          {currentWeek}
+          {formatWeekLabel(currentWeek)}
         </span>
         <button
           onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}

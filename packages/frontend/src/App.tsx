@@ -9,7 +9,6 @@ import MyWeeklyReport from './pages/MyWeeklyReport';
 import MyHistory from './pages/MyHistory';
 import PartStatus from './pages/PartStatus';
 import PartSummary from './pages/PartSummary';
-import TeamStatus from './pages/TeamStatus';
 import TeamSummary from './pages/TeamSummary';
 import TeamMgmt from './pages/TeamMgmt';
 import ProjectMgmt from './pages/ProjectMgmt';
@@ -26,7 +25,7 @@ const queryClient = new QueryClient({
 
 function RoleGuard({ roles, children }: { roles: string[]; children: React.ReactNode }) {
   const { user } = useAuthStore();
-  if (!user || !roles.includes(user.role)) {
+  if (!user || !user.roles.some((r) => roles.includes(r))) {
     return <Navigate to="/" replace />;
   }
   return <>{children}</>;
@@ -59,14 +58,6 @@ export default function App() {
               element={
                 <RoleGuard roles={['PART_LEADER']}>
                   <PartSummary />
-                </RoleGuard>
-              }
-            />
-            <Route
-              path="/team-status"
-              element={
-                <RoleGuard roles={['LEADER']}>
-                  <TeamStatus />
                 </RoleGuard>
               }
             />

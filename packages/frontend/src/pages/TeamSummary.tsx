@@ -37,6 +37,20 @@ function addWeeks(weekLabel: string, n: number): string {
   return getWeekLabel(monday);
 }
 
+function formatWeekLabel(weekLabel: string): string {
+  const match = weekLabel.match(/^(\d{4})-W(\d{2})$/);
+  if (!match) return weekLabel;
+  const year = parseInt(match[1], 10);
+  const week = parseInt(match[2], 10);
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const jan4Day = jan4.getUTCDay() || 7;
+  const week1Monday = new Date(Date.UTC(year, 0, 4 - jan4Day + 1));
+  const start = new Date(week1Monday.getTime() + (week - 1) * 7 * 86400000);
+  const end = new Date(start.getTime() + 4 * 86400000);
+  const fmt = (d: Date) => `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
+  return `${year}년 ${week}주차 (${fmt(start)} ~ ${fmt(end)})`;
+}
+
 const SUMMARY_STATUS_INFO: Record<string, { label: string; variant: 'ok' | 'warn' | 'gray' }> = {
   SUBMITTED:   { label: '제출완료', variant: 'ok' },
   DRAFT:       { label: '임시저장', variant: 'warn' },
@@ -55,7 +69,7 @@ interface PartSummaryRow {
 
 function buildPartSummaryRows(overviews: TeamWeeklyOverview[]): PartSummaryRow[] {
   return overviews.map((o) => {
-    const partLeader = o.members.find((m) => m.member.role === 'PART_LEADER');
+    const partLeader = o.members.find((m) => m.member.roles?.includes('PART_LEADER'));
     return {
       partId: o.part.id,
       partName: o.part.name,
@@ -76,7 +90,7 @@ export default function TeamSummary() {
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const isLeader = user?.role === 'LEADER';
+  const isLeader = user?.roles.includes('LEADER') ?? false;
   const teamId = user?.teamId ?? '';
 
   // PART_LEADER는 본인 파트만 접근 가능 — 초기 탭을 본인 파트로 설정
@@ -158,7 +172,7 @@ export default function TeamSummary() {
           ◀
         </button>
         <span className="flex-1 text-center text-[14px] font-semibold text-[var(--text)]">
-          {currentWeek}
+          {formatWeekLabel(currentWeek)}
         </span>
         <button
           onClick={() => {
@@ -240,7 +254,7 @@ export default function TeamSummary() {
           style={{ padding: '11px 16px' }}
         >
           <p className="text-[13px] font-semibold text-[var(--text)]">취합보고서 목록</p>
-          <p className="text-[12px] text-[var(--text-sub)]">{currentWeek}</p>
+          <p className="text-[12px] text-[var(--text-sub)]">{formatWeekLabel(currentWeek)}</p>
         </div>
         <Table>
           <TableHeader>

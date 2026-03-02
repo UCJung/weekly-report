@@ -5,7 +5,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: 'LEADER' | 'PART_LEADER' | 'MEMBER';
+  roles: ('LEADER' | 'PART_LEADER' | 'MEMBER')[];
   partId: string;
   partName: string;
   teamId: string;

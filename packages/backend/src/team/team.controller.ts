@@ -16,6 +16,7 @@ import { TeamService } from './team.service';
 import { MemberService } from './member.service';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
+import { ReorderPartsDto } from './dto/reorder-parts.dto';
 
 @Controller('api/v1')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -33,6 +34,12 @@ export class TeamController {
   @Get('teams/:teamId/parts')
   async getParts(@Param('teamId') teamId: string) {
     return this.teamService.findParts(teamId);
+  }
+
+  @Patch('teams/:teamId/parts/reorder')
+  @Roles(MemberRole.LEADER)
+  async reorderParts(@Param('teamId') teamId: string, @Body() dto: ReorderPartsDto) {
+    return this.teamService.reorderParts(teamId, dto);
   }
 
   @Get('teams/:teamId/members')

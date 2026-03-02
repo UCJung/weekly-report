@@ -6,7 +6,6 @@ import {
   ClipboardList,
   Users,
   FileText,
-  Building2,
   FileSearch,
   Settings,
   FolderOpen,
@@ -59,12 +58,6 @@ const MENU_GROUPS: MenuGroup[] = [
     roles: ['LEADER'],
     items: [
       {
-        path: '/team-status',
-        label: '팀 업무 현황',
-        icon: <Building2 size={14} />,
-        roles: ['LEADER'],
-      },
-      {
         path: '/team-summary',
         label: '취합보고서 조회',
         icon: <FileSearch size={14} />,
@@ -98,6 +91,13 @@ const ROLE_LABELS: Record<string, string> = {
   MEMBER: '팀원',
 };
 
+// 최고 역할 우선순위: LEADER > PART_LEADER > MEMBER
+function getPrimaryRole(roles: string[]): string {
+  if (roles.includes('LEADER')) return 'LEADER';
+  if (roles.includes('PART_LEADER')) return 'PART_LEADER';
+  return roles[0] ?? 'MEMBER';
+}
+
 export default function Sidebar() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
@@ -105,7 +105,7 @@ export default function Sidebar() {
   const canAccess = (roles?: string[]) => {
     if (!roles || roles.length === 0) return true;
     if (!user) return false;
-    return roles.includes(user.role);
+    return user.roles.some((r) => roles.includes(r));
   };
 
   const handleLogout = () => {
@@ -114,6 +114,7 @@ export default function Sidebar() {
   };
 
   const initials = user?.name ? user.name.slice(0, 1) : '?';
+  const primaryRole = user ? getPrimaryRole(user.roles) : 'MEMBER';
 
   return (
     <aside
@@ -209,7 +210,7 @@ export default function Sidebar() {
             <div className="flex-1 min-w-0">
               <p className="text-white text-[12px] font-medium truncate">{user.name}</p>
               <p className="text-[11px] truncate" style={{ color: 'var(--sidebar-text)' }}>
-                {user.partName} · {ROLE_LABELS[user.role] ?? user.role}
+                {user.partName} · {ROLE_LABELS[primaryRole] ?? primaryRole}
               </p>
             </div>
           </div>

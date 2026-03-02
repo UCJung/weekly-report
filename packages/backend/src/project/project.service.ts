@@ -5,6 +5,7 @@ import { BusinessException } from '../common/filters/business-exception';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectQueryDto } from './dto/project-query.dto';
+import { ReorderProjectsDto } from './dto/reorder-projects.dto';
 
 @Injectable()
 export class ProjectService {
@@ -95,6 +96,14 @@ export class ProjectService {
       where: { id },
       data: dto,
     });
+  }
+
+  async reorder(dto: ReorderProjectsDto) {
+    return this.prisma.$transaction(
+      dto.orderedIds.map((id, index) =>
+        this.prisma.project.update({ where: { id }, data: { sortOrder: index } })
+      )
+    );
   }
 
   async softDelete(id: string) {

@@ -16,9 +16,10 @@ const mockPartSummary = {
 const mockMember = {
   id: 'member-1',
   name: '홍길동',
-  role: 'MEMBER',
+  roles: ['MEMBER'],
   partId: 'part-1',
   isActive: true,
+  part: { id: 'part-1', name: 'DX' },
 };
 
 const mockPrisma = {

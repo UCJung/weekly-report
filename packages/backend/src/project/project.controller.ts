@@ -17,6 +17,7 @@ import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectQueryDto } from './dto/project-query.dto';
+import { ReorderProjectsDto } from './dto/reorder-projects.dto';
 
 @Controller('api/v1/projects')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -26,6 +27,12 @@ export class ProjectController {
   @Get()
   async findAll(@Query() query: ProjectQueryDto) {
     return this.projectService.findAll(query);
+  }
+
+  @Patch('reorder')
+  @Roles(MemberRole.LEADER)
+  async reorder(@Body() dto: ReorderProjectsDto) {
+    return this.projectService.reorder(dto);
   }
 
   @Get(':id')

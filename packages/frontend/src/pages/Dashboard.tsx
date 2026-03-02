@@ -63,7 +63,7 @@ function buildFlatMembers(teamOverview: TeamWeeklyOverview[]): FlatMember[] {
     o.members.map((m) => ({
       memberId: m.member.id,
       memberName: m.member.name,
-      role: m.member.role,
+      role: m.member.roles?.[0] ?? 'MEMBER',
       partName: o.part.name,
       status: m.report ? m.report.status : 'NOT_STARTED',
       workItemCount: m.report ? m.report.workItems.length : 0,
@@ -74,7 +74,7 @@ function buildFlatMembers(teamOverview: TeamWeeklyOverview[]): FlatMember[] {
 
 function buildPartSummaryRows(teamOverview: TeamWeeklyOverview[]): PartSummaryRow[] {
   return teamOverview.map((o) => {
-    const partLeader = o.members.find((m) => m.member.role === 'PART_LEADER');
+    const partLeader = o.members.find((m) => m.member.roles?.includes('PART_LEADER'));
     const submittedCount = o.members.filter(
       (m) => m.report?.status === 'SUBMITTED',
     ).length;
@@ -94,8 +94,8 @@ export default function Dashboard() {
   const [currentWeek] = useState(() => getWeekLabel(new Date()));
   const [exporting, setExporting] = useState(false);
 
-  const isLeader = user?.role === 'LEADER';
-  const isPartLeader = user?.role === 'PART_LEADER';
+  const isLeader = user?.roles.includes('LEADER') ?? false;
+  const isPartLeader = user?.roles.includes('PART_LEADER') ?? false;
   const partId = user?.partId ?? '';
   const teamId = user?.teamId ?? '';
 

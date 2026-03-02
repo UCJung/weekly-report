@@ -39,14 +39,14 @@ export class AuthService {
     id: string;
     name: string;
     email: string;
-    role: string;
+    roles: string[];
     partId: string;
     part: { name: string; teamId: string };
   }) {
     const payload = {
       sub: member.id,
       email: member.email,
-      role: member.role,
+      roles: member.roles,
       partId: member.partId,
       teamId: member.part.teamId,
     };
@@ -70,7 +70,7 @@ export class AuthService {
         id: member.id,
         name: member.name,
         email: member.email,
-        role: member.role,
+        roles: member.roles,
         partId: member.partId,
         partName: member.part.name,
         teamId: member.part.teamId,
@@ -102,7 +102,7 @@ export class AuthService {
     const newPayload = {
       sub: member.id,
       email: member.email,
-      role: member.role,
+      roles: member.roles,
       partId: member.partId,
       teamId: member.part.teamId,
     };

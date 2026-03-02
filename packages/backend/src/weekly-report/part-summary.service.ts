@@ -164,7 +164,7 @@ export class PartSummaryService {
       member: {
         id: member.id,
         name: member.name,
-        role: member.role,
+        roles: member.roles,
         partId: member.partId,
         partName: member.part.name,
       },
@@ -196,7 +196,7 @@ export class PartSummaryService {
     });
 
     const result: Array<{
-      member: { id: string; name: string; role: string; partId: string; partName: string };
+      member: { id: string; name: string; roles: string[]; partId: string; partName: string };
       report: typeof parts[0]['members'][0]['weeklyReports'][0] | null;
     }> = [];
 
@@ -206,7 +206,7 @@ export class PartSummaryService {
           member: {
             id: member.id,
             name: member.name,
-            role: member.role,
+            roles: member.roles,
             partId: part.id,
             partName: part.name,
           },
@@ -272,7 +272,7 @@ export class PartSummaryService {
       part: { id: part.id, name: part.name },
       summaryStatus: part.partSummaries[0]?.status ?? 'NOT_STARTED',
       members: part.members.map((member) => ({
-        member: { id: member.id, name: member.name, role: member.role },
+        member: { id: member.id, name: member.name, roles: member.roles },
         report: member.weeklyReports[0] ?? null,
       })),
     }));

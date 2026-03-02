@@ -7,9 +7,10 @@ export interface LoginResponse {
     id: string;
     name: string;
     email: string;
-    role: string;
+    roles: string[];
     partId: string;
     partName: string;
+    teamId: string;
   };
 }
 

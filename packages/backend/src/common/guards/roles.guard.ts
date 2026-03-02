@@ -16,6 +16,7 @@ export class RolesGuard implements CanActivate {
       return true;
     }
     const { user } = context.switchToHttp().getRequest();
-    return requiredRoles.includes(user.role);
+    // roles 배열 중 하나라도 requiredRoles에 포함되면 허용
+    return Array.isArray(user?.roles) && user.roles.some((r: string) => requiredRoles.includes(r as MemberRole));
   }
 }

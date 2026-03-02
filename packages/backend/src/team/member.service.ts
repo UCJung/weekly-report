@@ -20,7 +20,7 @@ export class MemberService {
         id: true,
         name: true,
         email: true,
-        role: true,
+        roles: true,
         partId: true,
         isActive: true,
         createdAt: true,
@@ -53,7 +53,7 @@ export class MemberService {
         name: dto.name,
         email: dto.email,
         password: hashedPassword,
-        role: dto.role,
+        roles: dto.roles,
         partId: dto.partId,
       },
       include: { part: true },
@@ -76,7 +76,7 @@ export class MemberService {
 
     const data: Record<string, unknown> = {};
     if (dto.name !== undefined) data.name = dto.name;
-    if (dto.role !== undefined) data.role = dto.role;
+    if (dto.roles !== undefined) data.roles = { set: dto.roles };
     if (dto.partId !== undefined) data.partId = dto.partId;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     if (dto.password !== undefined) {
