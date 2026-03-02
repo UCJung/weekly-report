@@ -22,6 +22,12 @@ const mockWorkItem = {
   project: { id: 'proj-1', name: '테스트프로젝트' },
 };
 
+const mockProject = {
+  id: 'proj-1',
+  name: '테스트프로젝트',
+  status: 'ACTIVE',
+};
+
 const mockPrisma = {
   workItem: {
     findMany: mock(() => Promise.resolve([])),
@@ -34,6 +40,9 @@ const mockPrisma = {
   },
   weeklyReport: {
     findUnique: mock(() => Promise.resolve(mockReport)),
+  },
+  project: {
+    findUnique: mock(() => Promise.resolve(mockProject)),
   },
   $transaction: mock((ops: Promise<unknown>[]) => Promise.all(ops)),
 };
@@ -50,6 +59,7 @@ describe('WorkItemService', () => {
     mockPrisma.workItem.delete.mockReset();
     mockPrisma.workItem.aggregate.mockReset();
     mockPrisma.weeklyReport.findUnique.mockReset();
+    mockPrisma.project.findUnique.mockResolvedValue(mockProject);
   });
 
   describe('create', () => {
@@ -101,6 +111,27 @@ describe('WorkItemService', () => {
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessException);
         expect((e as BusinessException).getStatus()).toBe(HttpStatus.FORBIDDEN);
+      }
+    });
+
+    it('should throw PROJECT_INACTIVE if project is inactive', async () => {
+      mockPrisma.weeklyReport.findUnique.mockResolvedValueOnce(mockReport);
+      mockPrisma.project.findUnique.mockResolvedValueOnce({
+        ...mockProject,
+        status: 'INACTIVE',
+      } as never);
+
+      try {
+        await service.create('report-1', 'member-1', {
+          projectId: 'proj-1',
+          doneWork: '',
+          planWork: '',
+        });
+        expect(true).toBe(false);
+      } catch (e) {
+        expect(e).toBeInstanceOf(BusinessException);
+        expect((e as BusinessException).errorCode).toBe('PROJECT_INACTIVE');
+        expect((e as BusinessException).getStatus()).toBe(422);
       }
     });
   });

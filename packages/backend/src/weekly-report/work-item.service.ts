@@ -1,5 +1,5 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
-import { ReportStatus } from '@prisma/client';
+import { ProjectStatus, ReportStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BusinessException } from '../common/filters/business-exception';
 import { CreateWorkItemDto } from './dto/create-work-item.dto';
@@ -20,6 +20,11 @@ export class WorkItemService {
 
   async create(weeklyReportId: string, memberId: string, dto: CreateWorkItemDto) {
     await this.findReportAndVerify(weeklyReportId, memberId);
+
+    // INACTIVE 프로젝트 제약: 사용안함 프로젝트에는 신규 업무항목 작성 불가
+    if (dto.projectId) {
+      await this.verifyProjectActive(dto.projectId);
+    }
 
     const maxOrder = await this.prisma.workItem.aggregate({
       where: { weeklyReportId },
@@ -58,6 +63,11 @@ export class WorkItemService {
         '제출된 주간업무의 항목은 수정할 수 없습니다.',
         HttpStatus.CONFLICT,
       );
+    }
+
+    // INACTIVE 프로젝트 제약: 프로젝트를 변경하는 경우 INACTIVE 프로젝트로 변경 불가
+    if (dto.projectId && dto.projectId !== workItem.projectId) {
+      await this.verifyProjectActive(dto.projectId);
     }
 
     return this.prisma.workItem.update({
@@ -144,6 +154,27 @@ export class WorkItemService {
     }
 
     return report;
+  }
+
+  private async verifyProjectActive(projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, status: true, name: true },
+    });
+    if (!project) {
+      throw new BusinessException(
+        'PROJECT_NOT_FOUND',
+        '프로젝트를 찾을 수 없습니다.',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    if (project.status === ProjectStatus.INACTIVE) {
+      throw new BusinessException(
+        'PROJECT_INACTIVE',
+        `"${project.name}" 프로젝트는 사용안함 상태입니다. 신규 업무항목을 작성할 수 없습니다.`,
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
   }
 
   private async findWorkItemAndVerify(id: string, memberId: string) {
