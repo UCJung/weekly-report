@@ -38,7 +38,7 @@ export interface UpdateTeamStatusDto {
 
 export const adminApi = {
   getAccounts: (params?: { status?: AccountStatus; search?: string }) =>
-    apiClient.get<{ data: AdminAccount[] }>('/admin/accounts', {
+    apiClient.get<{ data: { data: AdminAccount[]; pagination?: unknown } }>('/admin/accounts', {
       params: params ?? {},
     }),
 
@@ -49,7 +49,7 @@ export const adminApi = {
     apiClient.patch<{ data: unknown }>(`/admin/accounts/${id}/reset-password`),
 
   getTeams: (status?: TeamStatus) =>
-    apiClient.get<{ data: AdminTeam[] }>('/admin/teams', {
+    apiClient.get<{ data: { data: AdminTeam[]; pagination?: unknown } }>('/admin/teams', {
       params: status ? { status } : {},
     }),
 

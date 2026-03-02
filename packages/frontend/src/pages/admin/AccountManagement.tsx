@@ -254,7 +254,7 @@ export default function AccountManagement() {
               </TableRow>
             )}
             {!isLoading &&
-              accounts.map((account, idx) => (
+              accounts.map((account: AdminAccount, idx: number) => (
                 <TableRow
                   key={account.id}
                   className={idx % 2 === 1 ? 'bg-[var(--row-alt)]' : ''}
@@ -263,7 +263,7 @@ export default function AccountManagement() {
                   <TableCell className="text-[var(--text-sub)] text-[12px]">{account.email}</TableCell>
                   <TableCell className="text-[12px]">
                     {account.teams && account.teams.length > 0
-                      ? account.teams.map((t) => t.name).join(', ')
+                      ? account.teams.map((t: { id: string; name: string }) => t.name).join(', ')
                       : '—'}
                   </TableCell>
                   <TableCell className="text-[12px]">{account.roles?.join(', ') ?? '—'}</TableCell>

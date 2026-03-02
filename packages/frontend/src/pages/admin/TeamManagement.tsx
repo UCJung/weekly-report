@@ -198,7 +198,7 @@ export default function TeamManagement() {
               </TableRow>
             )}
             {!isLoading &&
-              teams.map((team, idx) => (
+              teams.map((team: AdminTeam, idx: number) => (
                 <TableRow
                   key={team.id}
                   className={idx % 2 === 1 ? 'bg-[var(--row-alt)]' : ''}

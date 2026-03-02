@@ -4,7 +4,7 @@ import { Search, Users, Plus, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTeams, useMyTeams, useRequestJoinTeam } from '../hooks/useTeams';
 import { useTeamStore } from '../stores/teamStore';
-import { TeamFilter } from '../api/team.api';
+import { TeamFilter, TeamListItem } from '../api/team.api';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import Input from '../components/ui/Input';
@@ -180,7 +180,7 @@ export default function TeamLanding() {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {teams.map((team) => (
+            {teams.map((team: TeamListItem) => (
               <div
                 key={team.id}
                 className="flex items-center justify-between px-5 py-4 rounded-xl border bg-white transition-shadow hover:shadow-sm"

@@ -94,7 +94,7 @@ export const teamApi = {
 
   // 팀 목록 조회 (검색 + 필터)
   getTeams: (params?: GetTeamsParams) =>
-    apiClient.get<{ data: TeamListItem[] }>('/teams', { params }),
+    apiClient.get<{ data: { data: TeamListItem[]; pagination?: unknown } }>('/teams', { params }),
 
   // 내 소속 팀 목록
   getMyTeams: () =>
