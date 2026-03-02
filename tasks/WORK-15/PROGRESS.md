@@ -7,7 +7,7 @@
 | TASK | Title | Status | Commit | Duration |
 |------|-------|--------|--------|----------|
 | WORK-15-TASK-01 | DB 스키마 변경 및 마이그레이션 | Done | — | — |
-| WORK-15-TASK-02 | Back-end ADMIN 관리 API | Blocked (TASK-01 필요) | — | — |
+| WORK-15-TASK-02 | Back-end ADMIN 관리 API | Done | — | — |
 | WORK-15-TASK-03 | Back-end 계정 신청 + 비밀번호 변경 API | Blocked (TASK-01 필요) | — | — |
 | WORK-15-TASK-04 | Back-end 팀 목록/신청/멤버 가입 API | Blocked (TASK-01 필요) | — | — |
 | WORK-15-TASK-05 | Front-end 계정 신청 + 비밀번호 변경 UI | Blocked (TASK-03 필요) | — | — |
@@ -21,3 +21,4 @@
 - [2026-03-02] WORK-15-TASK-01 빌드 검증 완료 (backend + frontend)
 - [2026-03-02] WORK-15-TASK-01 테스트 수정 완료 (46/46 pass)
 - [2026-03-02] WORK-15-TASK-01 DB 무결성 확인 (members:19, memberships:18, teams:1)
+- [2026-03-03] WORK-15-TASK-02 검증 완료 (12 tests pass, build ok, lint 0 errors)
