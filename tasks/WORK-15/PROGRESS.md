@@ -10,10 +10,10 @@
 | WORK-15-TASK-02 | Back-end ADMIN 관리 API | Done | — | — |
 | WORK-15-TASK-03 | Back-end 계정 신청 + 비밀번호 변경 API | Done | — | — |
 | WORK-15-TASK-04 | Back-end 팀 목록/신청/멤버 가입 API | Done | — | — |
-| WORK-15-TASK-05 | Front-end 계정 신청 + 비밀번호 변경 UI | Blocked (TASK-03 필요) | — | — |
-| WORK-15-TASK-06 | Front-end ADMIN 관리 화면 | Blocked (TASK-02 필요) | — | — |
-| WORK-15-TASK-07 | Front-end 팀 랜딩 화면 + 팀 선택 로직 | Blocked (TASK-04, TASK-05 필요) | — | — |
-| WORK-15-TASK-08 | Front-end 팀 파트관리 멤버 신청 승인/거절 UI | Blocked (TASK-04, TASK-07 필요) | — | — |
+| WORK-15-TASK-05 | Front-end 계정 신청 + 비밀번호 변경 UI | Ready | — | — |
+| WORK-15-TASK-06 | Front-end ADMIN 관리 화면 | Ready | — | — |
+| WORK-15-TASK-07 | Front-end 팀 랜딩 화면 + 팀 선택 로직 | Blocked (TASK-05 필요) | — | — |
+| WORK-15-TASK-08 | Front-end 팀 파트관리 멤버 신청 승인/거절 UI | Blocked (TASK-07 필요) | — | — |
 | WORK-15-TASK-09 | 통합 검증 | Blocked (TASK-05~08 필요) | — | — |
 
 ## Log
