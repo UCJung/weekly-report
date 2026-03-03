@@ -9,7 +9,7 @@
     "target": "ES2022",
     "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "../",
+    "rootDir": "./src",
     "baseUrl": "./",
     "incremental": true,
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
@@ -20,8 +20,8 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@uc-teamspace/shared": ["../shared/index.ts"],
-      "@uc-teamspace/shared/*": ["../shared/*"]
+      "@uc-teamspace/shared": ["../shared/dist/index.d.ts"],
+      "@uc-teamspace/shared/*": ["../shared/dist/*"]
     }
   },
   "include": ["src/**/*"],
