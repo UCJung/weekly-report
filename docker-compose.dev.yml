@@ -53,8 +53,13 @@ services:
       target: development
     ports:
       - "5173:5173"
+    environment:
+      API_TARGET: http://backend:3000
+      VITE_HOST: "0.0.0.0"
     volumes:
       - ./packages/frontend/src:/app/packages/frontend/src
+    depends_on:
+      - backend
 
 volumes:
   pgdata:

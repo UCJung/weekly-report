@@ -19,11 +19,11 @@ export default defineConfig({
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
   },
   server: {
-    host: '127.0.0.1',
+    host: process.env.VITE_HOST || '127.0.0.1',
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: process.env.API_TARGET || 'http://localhost:3000',
         changeOrigin: true,
       },
     },
