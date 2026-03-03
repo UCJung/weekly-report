@@ -1,6 +1,6 @@
 import { Injectable, HttpStatus, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AccountStatus, TeamStatus, MemberRole, Prisma } from '@prisma/client';
+import { AccountStatus, TeamStatus, MemberRole, ProjectStatus, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { BusinessException } from '../common/filters/business-exception';
@@ -11,6 +11,7 @@ import { UpdateTeamStatusDto } from './dto/update-team-status.dto';
 import { CreateGlobalProjectDto } from './dto/create-global-project.dto';
 import { UpdateGlobalProjectDto } from './dto/update-global-project.dto';
 import { ListGlobalProjectsDto } from './dto/list-global-projects.dto';
+import { ApproveProjectDto } from './dto/approve-project.dto';
 
 @Injectable()
 export class AdminService {
@@ -351,6 +352,12 @@ export class AdminService {
           category: true,
           status: true,
           sortOrder: true,
+          managerId: true,
+          department: true,
+          description: true,
+          manager: {
+            select: { id: true, name: true, email: true },
+          },
           _count: {
             select: {
               teamProjects: true,
@@ -403,6 +410,12 @@ export class AdminService {
         code: dto.code,
         category: dto.category,
         sortOrder: (maxSortOrder._max.sortOrder ?? -1) + 1,
+        ...(dto.managerId && { managerId: dto.managerId }),
+        ...(dto.department && { department: dto.department }),
+        ...(dto.description && { description: dto.description }),
+      },
+      include: {
+        manager: { select: { id: true, name: true, email: true } },
       },
     });
   }
@@ -431,9 +444,74 @@ export class AdminService {
       }
     }
 
+    const { managerId, department, description, ...rest } = dto;
     return this.prisma.project.update({
       where: { id },
-      data: dto,
+      data: {
+        ...rest,
+        ...(managerId !== undefined && { managerId }),
+        ...(department !== undefined && { department }),
+        ...(description !== undefined && { description }),
+      },
+      include: {
+        manager: { select: { id: true, name: true, email: true } },
+      },
     });
+  }
+
+  // ──────────────────────────────────────
+  // 프로젝트 승인 (PENDING → ACTIVE + code 부여)
+  // ──────────────────────────────────────
+
+  async approveProject(id: string, dto: ApproveProjectDto) {
+    const project = await this.prisma.project.findUnique({ where: { id } });
+    if (!project) {
+      throw new BusinessException(
+        'PROJECT_NOT_FOUND',
+        '프로젝트를 찾을 수 없습니다.',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (project.status !== ProjectStatus.PENDING) {
+      throw new BusinessException(
+        'PROJECT_NOT_PENDING',
+        'PENDING 상태인 프로젝트만 승인할 수 있습니다.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // code 중복 체크 (ACTIVE 프로젝트와 중복 불허)
+    const existingCode = await this.prisma.project.findFirst({
+      where: {
+        code: dto.code,
+        id: { not: id },
+        status: { not: ProjectStatus.INACTIVE },
+      },
+    });
+    if (existingCode) {
+      throw new BusinessException(
+        'PROJECT_CODE_DUPLICATE',
+        '프로젝트코드가 이미 사용 중입니다.',
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    const approved = await this.prisma.project.update({
+      where: { id },
+      data: {
+        code: dto.code,
+        status: ProjectStatus.ACTIVE,
+      },
+      include: {
+        manager: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    this.logger.log(
+      `[PROJECT_APPROVED] 프로젝트 승인: "${approved.name}" (code: ${approved.code})`,
+    );
+
+    return approved;
   }
 }

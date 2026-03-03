@@ -17,4 +17,16 @@ export class UpdateGlobalProjectDto {
   @IsOptional()
   @IsEnum(ProjectStatus, { message: '유효한 프로젝트 상태가 아닙니다.' })
   status?: ProjectStatus;
+
+  @IsOptional()
+  @IsString()
+  managerId?: string;
+
+  @IsOptional()
+  @IsString()
+  department?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }

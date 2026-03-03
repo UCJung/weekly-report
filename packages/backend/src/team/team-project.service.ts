@@ -55,6 +55,16 @@ export class TeamProjectService {
       );
     }
 
+    // ACTIVE 상태 프로젝트만 팀에 추가 가능
+    const inactiveProjects = projects.filter((p) => p.status !== 'ACTIVE');
+    if (inactiveProjects.length > 0) {
+      throw new BusinessException(
+        'PROJECT_NOT_ACTIVE',
+        `ACTIVE 상태인 프로젝트만 팀에 추가할 수 있습니다. (비활성: ${inactiveProjects.map((p) => p.name).join(', ')})`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     // 이미 등록된 프로젝트 필터링
     const existing = await this.prisma.teamProject.findMany({
       where: { teamId, projectId: { in: dto.projectIds } },

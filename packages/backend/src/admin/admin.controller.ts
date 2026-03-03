@@ -20,6 +20,7 @@ import { UpdateTeamStatusDto } from './dto/update-team-status.dto';
 import { CreateGlobalProjectDto } from './dto/create-global-project.dto';
 import { UpdateGlobalProjectDto } from './dto/update-global-project.dto';
 import { ListGlobalProjectsDto } from './dto/list-global-projects.dto';
+import { ApproveProjectDto } from './dto/approve-project.dto';
 
 @Controller('api/v1/admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -86,5 +87,13 @@ export class AdminController {
     @Body() dto: UpdateGlobalProjectDto,
   ) {
     return this.adminService.updateProject(id, dto);
+  }
+
+  @Patch('projects/:id/approve')
+  async approveProject(
+    @Param('id') id: string,
+    @Body() dto: ApproveProjectDto,
+  ) {
+    return this.adminService.approveProject(id, dto);
   }
 }

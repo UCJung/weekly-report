@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { ProjectCategory } from '@prisma/client';
 
 export class CreateGlobalProjectDto {
@@ -12,4 +12,16 @@ export class CreateGlobalProjectDto {
 
   @IsEnum(ProjectCategory, { message: '유효한 프로젝트 분류가 아닙니다.' })
   category: ProjectCategory;
+
+  @IsOptional()
+  @IsString()
+  managerId?: string;
+
+  @IsOptional()
+  @IsString()
+  department?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }
