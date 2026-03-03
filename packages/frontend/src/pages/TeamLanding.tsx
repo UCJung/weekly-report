@@ -212,13 +212,21 @@ export default function TeamLanding() {
 
                 <div className="flex items-center gap-2">
                   {team.isMember ? (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleSelectTeam(team.id)}
-                    >
-                      선택
-                    </Button>
+                    <>
+                      <span
+                        className="text-[12px] font-medium px-2"
+                        style={{ color: 'var(--ok)' }}
+                      >
+                        소속됨
+                      </span>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleSelectTeam(team.id)}
+                      >
+                        선택
+                      </Button>
+                    </>
                   ) : (
                     <Button
                       variant="outline"

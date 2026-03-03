@@ -4,7 +4,14 @@ import { teamApi, GetTeamsParams, TeamListItem } from '../api/team.api';
 export function useTeams(params?: GetTeamsParams) {
   return useQuery({
     queryKey: ['teams', params],
-    queryFn: () => teamApi.getTeams(params).then((r) => r.data.data.data),
+    queryFn: () =>
+      teamApi.getTeams(params).then((r) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (r.data.data.data as any[]).map((t): TeamListItem => ({
+          ...t,
+          isMember: t.isMember ?? t.isJoined ?? false,
+        })),
+      ),
   });
 }
 
