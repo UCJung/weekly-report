@@ -7,6 +7,7 @@ import { ProjectModule } from './project/project.module';
 import { WeeklyReportModule } from './weekly-report/weekly-report.module';
 import { ExportModule } from './export/export.module';
 import { AdminModule } from './admin/admin.module';
+import { TimesheetModule } from './timesheet/timesheet.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -22,6 +23,7 @@ import { HealthController } from './health.controller';
     WeeklyReportModule,
     ExportModule,
     AdminModule,
+    TimesheetModule,
   ],
   controllers: [HealthController],
 })
