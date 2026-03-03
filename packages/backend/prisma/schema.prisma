@@ -106,6 +106,8 @@ model TeamMembership {
   updatedAt DateTime @updatedAt
 
   @@unique([memberId, teamId])
+  @@index([memberId])
+  @@index([teamId])
   @@map("team_memberships")
 }
 
@@ -127,6 +129,8 @@ model TeamJoinRequest {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([memberId])
+  @@index([teamId])
   @@map("team_join_requests")
 }
 
@@ -187,6 +191,7 @@ model WeeklyReport {
   updatedAt DateTime @updatedAt
 
   @@unique([memberId, weekStart])
+  @@index([weekStart])
   @@map("weekly_reports")
 }
 
@@ -211,6 +216,8 @@ model WorkItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([weeklyReportId])
+  @@index([projectId])
   @@map("work_items")
 }
 
@@ -239,6 +246,7 @@ model PartSummary {
   updatedAt DateTime @updatedAt
 
   @@unique([partId, weekStart])
+  @@index([weekStart])
   @@map("part_summaries")
 }
 
@@ -256,5 +264,6 @@ model SummaryWorkItem {
   partSummary PartSummary @relation(fields: [partSummaryId], references: [id], onDelete: Cascade)
   project     Project     @relation(fields: [projectId], references: [id])
 
+  @@index([partSummaryId])
   @@map("summary_work_items")
 }

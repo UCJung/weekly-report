@@ -74,7 +74,7 @@ describe('TeamJoinService', () => {
 
       expect(result.data).toHaveLength(1);
       expect(result.data[0].memberCount).toBe(3);
-      expect(result.data[0].isJoined).toBe(false);
+      expect(result.data[0].isMember).toBe(false);
       expect(result.pagination.total).toBe(1);
     });
 
@@ -87,7 +87,7 @@ describe('TeamJoinService', () => {
       mockPrisma.team.count.mockResolvedValueOnce(1);
 
       const result = await service.listTeams({ filter: TeamFilter.JOINED }, 'member-1');
-      expect(result.data[0].isJoined).toBe(true);
+      expect(result.data[0].isMember).toBe(true);
     });
   });
 
