@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/Select';
-import { getWeekLabel, addWeeks, formatWeekLabel } from '@weekly-report/shared/constants/week-utils';
+import { getWeekLabel, addWeeks, formatWeekLabel } from '@uc-teamspace/shared/constants/week-utils';
 
 // ───── 타입 ─────
 

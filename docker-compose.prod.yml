@@ -1,16 +1,16 @@
-name: weekly-report-prod
+name: uc-teamspace-prod
 
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-weekly_report}
+      POSTGRES_DB: ${POSTGRES_DB:-uc_teamspace}
       POSTGRES_USER: ${POSTGRES_USER:-prod}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-prod} -d ${POSTGRES_DB:-weekly_report}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-prod} -d ${POSTGRES_DB:-uc_teamspace}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -38,7 +38,7 @@ services:
       target: production
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-prod}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-weekly_report}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-prod}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-uc_teamspace}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}

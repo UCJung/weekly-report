@@ -1,4 +1,4 @@
-# 주간업무보고 시스템 — 프론트엔드 기능 명세서
+# UC TeamSpace — 프론트엔드 기능 명세서
 
 > 최종 업데이트: 2026-03-03
 > 기술 스택: React 18 + TypeScript 5 + Vite 6 + Tailwind CSS 3

@@ -1,4 +1,4 @@
-# 주간업무보고 시스템 — 웹 스타일 가이드
+# UC TeamSpace — 웹 스타일 가이드
 
 > **대상:** React 18 + TypeScript + Tailwind CSS 3
 > **기준 해상도:** 1280px 이상 고정 (반응형 불필요)
@@ -705,4 +705,4 @@ tbody tr.warn-row:hover    { background: #ffefd9; }
 
 ---
 
-*주간업무보고 시스템 — Web Style Guide v2.0 / 2026년 3월 확정*
+*UC TeamSpace — Web Style Guide v2.0 / 2026년 3월 확정*

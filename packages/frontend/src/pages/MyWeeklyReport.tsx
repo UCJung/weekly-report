@@ -21,7 +21,7 @@ import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import { ConfirmModal } from '../components/ui/Modal';
 import { WorkItem } from '../api/weekly-report.api';
-import { getWeekLabel, addWeeks, formatWeekLabel } from '@weekly-report/shared/constants/week-utils';
+import { getWeekLabel, addWeeks, formatWeekLabel } from '@uc-teamspace/shared/constants/week-utils';
 
 export default function MyWeeklyReport() {
   const [currentWeek, setCurrentWeek] = useState(() => getWeekLabel(new Date()));

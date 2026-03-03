@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-# 주간업무보고 시스템 — 개발 마스터 가이드
+# UC TeamSpace — 개발 마스터 가이드
 
 > Claude Code가 이 프로젝트에서 작업할 때 **반드시 이 파일을 먼저 읽고 시작**한다.
 > 모든 판단 기준, 컨벤션, 작업 프로세스는 이 파일이 최우선이다.
@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | 항목 | 내용 |
 |---|---|
-| 프로젝트명 | 주간업무보고 시스템 |
+| 프로젝트명 | UC TeamSpace |
 | 대상 조직 | 다중 팀 지원 (초기 선행연구개발팀 DX·AX 파트 기준으로 개발, 이후 확장) |
 | 핵심 기능 | ① 팀·파트·팀원 관리  ② 프로젝트 관리  ③ 주간업무 작성(그리드 UI)  ④ 파트 취합보고  ⑤ 팀장 조회·Excel 내보내기  ⑥ 관리자(Admin) 시스템  ⑦ 팀 생성·가입 신청/승인  ⑧ 다중 팀 소속 |
 | 업무 작성 구조 | 프로젝트별 업무항목 → 세부업무(`*`) → 상세작업(`ㄴ`) 3단계 |

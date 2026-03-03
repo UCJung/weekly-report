@@ -1,6 +1,6 @@
 # API 명세서
 
-> 주간업무보고 시스템 Backend REST API
+> UC TeamSpace Backend REST API
 > Base URL: `http://localhost:3000`
 > Global Prefix: `api/v1`
 

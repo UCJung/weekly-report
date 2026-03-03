@@ -48,7 +48,7 @@ export default function Header() {
   const navigate = useNavigate();
 
   const pageInfo = PAGE_TITLES[location.pathname] ?? {
-    title: '주간업무보고',
+    title: 'UC TeamSpace',
     subtitle: '',
   };
   const today = formatDate(new Date());

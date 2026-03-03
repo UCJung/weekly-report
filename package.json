@@ -1,5 +1,5 @@
 {
-  "name": "weekly-report-system",
+  "name": "uc-teamspace",
   "private": true,
   "workspaces": [
     "packages/*"

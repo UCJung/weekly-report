@@ -20,8 +20,8 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@weekly-report/shared": ["../shared/index.ts"],
-      "@weekly-report/shared/*": ["../shared/*"]
+      "@uc-teamspace/shared": ["../shared/index.ts"],
+      "@uc-teamspace/shared/*": ["../shared/*"]
     }
   },
   "include": ["src/**/*"],

@@ -153,7 +153,7 @@ export default function Sidebar() {
         onClick={() => navigate('/')}
       >
         <span className="text-[16px]">📋</span>
-        <span className="text-white font-bold text-[13px] tracking-tight">주간업무보고</span>
+        <span className="text-white font-bold text-[13px] tracking-tight">UC TeamSpace</span>
       </div>
 
       {/* 메뉴 */}

@@ -8,11 +8,11 @@ export default defineConfig({
     alias: [
       { find: '@', replacement: path.resolve(__dirname, './src') },
       {
-        find: /^@weekly-report\/shared\/(.*)$/,
+        find: /^@uc-teamspace\/shared\/(.*)$/,
         replacement: path.resolve(__dirname, '../shared/$1.ts'),
       },
       {
-        find: '@weekly-report/shared',
+        find: '@uc-teamspace/shared',
         replacement: path.resolve(__dirname, '../shared/index.ts'),
       },
     ],

@@ -29,7 +29,7 @@ test.describe('주간업무 작성 (시나리오 #1, #2)', () => {
   });
 
   test('대시보드 로딩 확인', async ({ page }) => {
-    await expect(page.getByText('주간업무보고 시스템')).toBeVisible({ timeout: 5000 }).catch(() => {
+    await expect(page.getByText('UC TeamSpace')).toBeVisible({ timeout: 5000 }).catch(() => {
       // 대시보드에 시스템명이 없을 수도 있음 - 빠른 진입 링크로 확인
       return expect(page.getByText('내 주간업무 작성하기')).toBeVisible({ timeout: 5000 });
     });

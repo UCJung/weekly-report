@@ -70,7 +70,7 @@ export default function Login() {
             >
               📋
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">주간업무보고</h1>
+            <h1 className="text-3xl font-bold tracking-tight">UC TeamSpace</h1>
             <p className="text-base opacity-80">선행연구개발팀 업무 현황을 한눈에</p>
           </div>
 
@@ -99,7 +99,7 @@ export default function Login() {
           <div className="flex flex-col items-center gap-1 mb-8 md:hidden">
             <span className="text-2xl">📋</span>
             <h1 className="text-xl font-bold" style={{ color: 'var(--text)' }}>
-              주간업무보고
+              UC TeamSpace
             </h1>
             <p className="text-xs" style={{ color: 'var(--text-sub)' }}>
               선행연구개발팀

@@ -1,6 +1,6 @@
-# 주간업무보고 시스템
+# UC TeamSpace
 
-선행연구개발팀의 주간업무보고를 디지털화한 웹 애플리케이션.
+팀 협업 플랫폼 — 주간업무보고를 시작으로 다양한 업무 기능을 지원하는 웹 애플리케이션.
 
 ## 기능 요약
 
@@ -122,7 +122,7 @@ cp .env.production.example .env.production
 
 ```env
 # PostgreSQL
-POSTGRES_DB=weekly_report
+POSTGRES_DB=uc_teamspace
 POSTGRES_USER=prod
 POSTGRES_PASSWORD=여기에_강한_비밀번호_입력
 

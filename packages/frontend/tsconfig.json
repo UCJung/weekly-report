@@ -16,8 +16,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@weekly-report/shared": ["../shared/index.ts"],
-      "@weekly-report/shared/*": ["../shared/*"]
+      "@uc-teamspace/shared": ["../shared/index.ts"],
+      "@uc-teamspace/shared/*": ["../shared/*"]
     }
   },
   "include": ["src", "vite-env.d.ts"],

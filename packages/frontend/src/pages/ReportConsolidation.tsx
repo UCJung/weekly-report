@@ -9,7 +9,7 @@ import GridCell from '../components/grid/GridCell';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import { ConfirmModal } from '../components/ui/Modal';
-import { getWeekLabel, addWeeks, formatWeekLabel } from '@weekly-report/shared/constants/week-utils';
+import { getWeekLabel, addWeeks, formatWeekLabel } from '@uc-teamspace/shared/constants/week-utils';
 
 type EditingCell = { rowId: string; column: 'doneWork' | 'planWork' | 'remarks' } | null;
 type ScopeType = 'TEAM' | 'PART';

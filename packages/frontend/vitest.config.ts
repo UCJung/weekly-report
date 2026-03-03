@@ -7,7 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@weekly-report/shared': path.resolve(__dirname, '../shared'),
+      '@uc-teamspace/shared': path.resolve(__dirname, '../shared'),
     },
   },
   test: {

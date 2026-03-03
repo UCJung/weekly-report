@@ -14,7 +14,7 @@ const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:5173';
 test.describe('인증 시나리오', () => {
   test('로그인 페이지 렌더링', async ({ page }) => {
     await page.goto(BASE_URL + '/login');
-    await expect(page.getByText('주간업무보고 시스템')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('UC TeamSpace')).toBeVisible({ timeout: 5000 });
   });
 
   test('유효하지 않은 자격증명으로 로그인 실패', async ({ page }) => {

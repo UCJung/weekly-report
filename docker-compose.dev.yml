@@ -1,10 +1,10 @@
-name: weekly-report-dev
+name: uc-teamspace-dev
 
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: weekly_report
+      POSTGRES_DB: uc_teamspace
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dev1234
     ports:
@@ -12,7 +12,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev -d weekly_report"]
+      test: ["CMD-SHELL", "pg_isready -U dev -d uc_teamspace"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -35,9 +35,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgresql://dev:dev1234@postgres:5432/weekly_report
+      DATABASE_URL: postgresql://dev:dev1234@postgres:5432/uc_teamspace
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: dev-secret-key-weekly-report-2026
+      JWT_SECRET: dev-secret-key-uc-teamspace-2026
     volumes:
       - ./packages/backend/src:/app/packages/backend/src
     depends_on:

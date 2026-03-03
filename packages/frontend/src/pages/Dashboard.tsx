@@ -8,7 +8,7 @@ import { useTeamStore } from '../stores/teamStore';
 import { useQuery } from '@tanstack/react-query';
 import { partApi, TeamWeeklyOverview } from '../api/part.api';
 import { exportApi } from '../api/export.api';
-import { getWeekLabel, addWeeks, formatWeekLabel } from '@weekly-report/shared/constants/week-utils';
+import { getWeekLabel, addWeeks, formatWeekLabel } from '@uc-teamspace/shared/constants/week-utils';
 import { ROLE_LABEL, REPORT_STATUS_LABEL, REPORT_STATUS_VARIANT } from '../constants/labels';
 
 const SUMMARY_STATUS_VARIANT: Record<string, 'ok' | 'warn' | 'gray'> = {
