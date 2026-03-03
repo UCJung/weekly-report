@@ -7,9 +7,10 @@ WORKDIR /app
 COPY package.json bun.lock* ./
 COPY packages/backend/ packages/backend/
 COPY packages/shared/ packages/shared/
-RUN bun install
+RUN bun install --backend=hardlink
 WORKDIR /app/packages/backend
 ENV PATH="/app/packages/backend/node_modules/.bin:/app/node_modules/.bin:$PATH"
+RUN bunx prisma generate
 CMD ["nest", "start", "--watch"]
 
 # Production build
@@ -18,7 +19,7 @@ WORKDIR /app
 COPY package.json bun.lock* ./
 COPY packages/backend/ packages/backend/
 COPY packages/shared/ packages/shared/
-RUN bun install
+RUN bun install --backend=hardlink
 WORKDIR /app/packages/backend
 ENV PATH="/app/packages/backend/node_modules/.bin:/app/node_modules/.bin:$PATH"
 RUN bunx prisma generate
