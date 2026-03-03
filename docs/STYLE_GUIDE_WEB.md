@@ -1,8 +1,8 @@
-# 웨어러블 환자 모니터링 시스템 — 웹 스타일 가이드
+# 주간업무보고 시스템 — 웹 스타일 가이드
 
-> **대상:** React 18 + TypeScript + Tailwind CSS  
-> **기준 해상도:** 1280px 이상 고정 (반응형 불필요)  
-> **최종 확정 레이아웃 기준** — 2026년 2월
+> **대상:** React 18 + TypeScript + Tailwind CSS 3
+> **기준 해상도:** 1280px 이상 고정 (반응형 불필요)
+> **최종 확정 레이아웃 기준** — 2026년 3월
 
 ---
 
@@ -29,9 +29,9 @@
 
 | 원칙 | 설명 |
 |------|------|
-| **밀도 우선** | 의료 관리 도구이므로 한 화면에 많은 정보를 표시. 여백은 최소화하되 가독성 확보 |
-| **상태 명시** | 모든 데이터 행·배지·카드는 상태(정상/경고/오류/비활성)를 색으로 즉시 식별 가능 |
-| **액션 최소화** | 자주 쓰는 액션(조회·다운로드)은 항상 상단 우측 고정 |
+| **정보 밀도** | 업무 관리 도구이므로 한 화면에 많은 정보를 표시. 여백은 최소화하되 가독성 확보 |
+| **상태 명시** | 모든 데이터 행·배지·카드는 상태(제출완료/임시저장/미작성/활성/비활성)를 색으로 즉시 식별 가능 |
+| **액션 최소화** | 자주 쓰는 액션(조회·다운로드·제출)은 항상 상단 우측 고정 |
 | **일관된 구조** | 모든 목록 페이지 = 필터 바 → 테이블 패널 → 페이지네이션 구조 유지 |
 
 ---
@@ -69,22 +69,14 @@
 
 ### 2.4 Sidebar Colors
 
-| 역할 | HEX |
-|------|-----|
-| 사이드바 배경 | `#181d2e` |
-| 메뉴 구분선 | `#2a3045` |
-| 활성 메뉴 배경 | `#252d48` |
-| 비활성 메뉴 텍스트 | `#8896b3` |
-| 서브메뉴 활성 | `#a89ef5` |
-
-### 2.5 수집 항목 분류 색상
-
-| 분류 | 배경 | 텍스트 |
-|------|------|--------|
-| 생체신호 | `#fffde7` | `#8a6400` |
-| 활동 | `#e3f2fd` | `#1a5276` |
-| 수면 | `#f3e5f5` | `#6c3483` |
-| AI 종합 | `#e8f5e9` | `#1a6b3c` |
+| 역할 | 변수 | HEX |
+|------|------|-----|
+| 사이드바 배경 | `--sidebar-bg` | `#181d2e` |
+| 메뉴 구분선 | `--sidebar-divider` | `#2a3045` |
+| 활성 메뉴 배경 | `--sidebar-active` | `#252d48` |
+| 비활성 메뉴 텍스트 | `--sidebar-text` | `#8896b3` |
+| 메뉴 그룹 타이틀 | `--sidebar-menu-title` | `#4a5470` |
+| 서브메뉴 활성 | `--sidebar-sub-active` | `#a89ef5` |
 
 ---
 
@@ -113,7 +105,7 @@ font-family: 'Noto Sans KR', sans-serif;
 | 보조 텍스트 | `12px` | `400` | `--text-sub` |
 | 캡션 / 힌트 | `11px` | `400` | `--text-sub` |
 | 배지 텍스트 | `11px` | `600` | 상태별 |
-| 메뉴 그룹 타이틀 | `10px` | `600` | `#4a5470` |
+| 메뉴 그룹 타이틀 | `10px` | `600` | `var(--sidebar-menu-title)` |
 
 ---
 
@@ -154,7 +146,7 @@ font-family: 'Noto Sans KR', sans-serif;
 .sidebar-logo {
   height: 48px;
   padding: 0 16px;
-  border-bottom: 1px solid #2a3045;
+  border-bottom: 1px solid var(--sidebar-divider);
   display: flex;
   align-items: center;
 }
@@ -164,7 +156,7 @@ font-family: 'Noto Sans KR', sans-serif;
   padding: 8px 16px 4px;
   font-size: 10px;
   font-weight: 600;
-  color: #4a5470;
+  color: var(--sidebar-menu-title);
   letter-spacing: 0.8px;
   text-transform: uppercase;
 }
@@ -173,14 +165,14 @@ font-family: 'Noto Sans KR', sans-serif;
 .menu-item {
   padding: 7px 16px;
   font-size: 12.5px;
-  color: #8896b3;
+  color: var(--sidebar-text);
   border-left: 3px solid transparent;
   gap: 9px;
 }
 .menu-item.active {
   color: #ffffff;
-  background: #252d48;
-  border-left-color: #6b5ce7; /* --primary */
+  background: var(--sidebar-active);
+  border-left-color: var(--primary);
   font-weight: 500;
 }
 ```
@@ -191,7 +183,7 @@ font-family: 'Noto Sans KR', sans-serif;
 .header {
   height: 48px;
   background: #ffffff;
-  border-bottom: 1px solid #e0e4ea;
+  border-bottom: 1px solid var(--gray-border);
   padding: 0 20px;
   display: flex;
   align-items: center;
@@ -204,7 +196,7 @@ font-family: 'Noto Sans KR', sans-serif;
 ```css
 .content {
   padding: 18px 20px;
-  background: #f0f2f5;
+  background: var(--gray-light);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -247,9 +239,9 @@ font-family: 'Noto Sans KR', sans-serif;
 
 ```tsx
 // React 사용 예시
-<button className="btn btn-primary">✓ 확인</button>
+<button className="btn btn-primary">✓ 제출</button>
 <button className="btn btn-outline">취소</button>
-<button className="btn btn-danger">🔓 해제 확인</button>
+<button className="btn btn-danger">삭제 확인</button>
 
 // 테이블 내 소형 버튼
 <button className="btn btn-outline" style={{ height: 26, fontSize: 11, padding: '0 8px' }}>조회</button>
@@ -282,22 +274,25 @@ font-family: 'Noto Sans KR', sans-serif;
 
 | 배지 | 배경 | 텍스트 | 사용처 |
 |------|------|--------|--------|
-| `badge-ok` | `#e8f8f0` | `#27ae60` | 정상 수집, ACTIVE |
-| `badge-warn` | `#fff3e0` | `#e67e22` | 미수집, MAINTENANCE |
-| `badge-danger` (= `badge-red`) | `#fdecea` | `#e74c3c` | 오류, LOST |
-| `badge-blue` | `#e0f0ff` | `#1a6bb5` | ASSIGNED, 파랑 상태 |
-| `badge-purple` | `#ede9ff` | `#6b5ce7` | ACTIVE(할당중) |
-| `badge-gray` | `#f0f2f5` | `#6c7a89` | 미할당, 비활성 |
+| `badge-ok` | `#e8f8f0` | `#27ae60` | 제출완료, ACTIVE, 소속됨 |
+| `badge-warn` | `#fff3e0` | `#e67e22` | 임시저장, PENDING |
+| `badge-danger` | `#fdecea` | `#e74c3c` | 미작성, INACTIVE |
+| `badge-blue` | `#e0f0ff` | `#1a6bb5` | 수행과제 |
+| `badge-purple` | `#ede9ff` | `#6b5ce7` | 공통업무, APPROVED |
+| `badge-gray` | `#f0f2f5` | `#6c7a89` | 미생성, 비활성 |
 
 ```tsx
-// 수집 상태 배지 예시
+// 주간업무 상태 배지 예시
 <span className="badge badge-ok">
-  <span className="badge-dot" />✅ 정상
+  <span className="badge-dot" /> 제출완료
 </span>
 <span className="badge badge-warn">
-  <span className="badge-dot" />⚠ 미수집
+  <span className="badge-dot" /> 임시저장
 </span>
-<span className="badge badge-gray">— 미할당</span>
+<span className="badge badge-danger">
+  <span className="badge-dot" /> 미작성
+</span>
+<span className="badge badge-gray">— 미생성</span>
 ```
 
 ---
@@ -310,18 +305,18 @@ font-family: 'Noto Sans KR', sans-serif;
 .form-input {
   height: 32px;
   padding: 0 10px;
-  border: 1px solid #e0e4ea;
+  border: 1px solid var(--gray-border);
   border-radius: 5px;
   font-size: 12.5px;
   font-family: 'Noto Sans KR', sans-serif;
-  color: #1c2333;
+  color: var(--text);
   outline: none;
   transition: border-color 0.15s;
 }
-.form-input:focus   { border-color: #6b5ce7; }
-.form-input.error   { border-color: #e74c3c; }
+.form-input:focus   { border-color: var(--primary); }
+.form-input.error   { border-color: var(--danger); }
 .form-input.readonly {
-  background: #f4f6fa;
+  background: var(--tbl-header);
   cursor: default;
 }
 ```
@@ -332,13 +327,13 @@ font-family: 'Noto Sans KR', sans-serif;
 .form-select {
   height: 32px;
   padding: 0 10px;
-  border: 1px solid #e0e4ea;
+  border: 1px solid var(--gray-border);
   border-radius: 5px;
   font-size: 12.5px;
   background: white;
   cursor: pointer;
 }
-.form-select:focus { border-color: #6b5ce7; }
+.form-select:focus { border-color: var(--primary); }
 ```
 
 ### 7.3 필터 바용 Select / Input (약간 더 낮음)
@@ -347,7 +342,7 @@ font-family: 'Noto Sans KR', sans-serif;
 .filter-select {
   height: 30px;  /* 필터 바에서는 30px */
   padding: 0 10px;
-  border: 1px solid #e0e4ea;
+  border: 1px solid var(--gray-border);
   border-radius: 5px;
   font-size: 12.5px;
 }
@@ -366,10 +361,10 @@ font-family: 'Noto Sans KR', sans-serif;
 .form-label {
   font-size: 12.5px;
   font-weight: 600;
-  color: #6c7a89;
+  color: var(--text-sub);
   white-space: nowrap;
 }
-.form-label .req { color: #e74c3c; margin-left: 2px; }
+.form-label .req { color: var(--danger); margin-left: 2px; }
 ```
 
 ---
@@ -394,63 +389,43 @@ font-family: 'Noto Sans KR', sans-serif;
 /* 패널 */
 .table-panel {
   background: #ffffff;
-  border: 1px solid #e0e4ea;
+  border: 1px solid var(--gray-border);
   border-radius: 8px;
   overflow: hidden;
 }
 
 /* 헤더 */
 thead th {
-  background: #f4f6fa;
+  background: var(--tbl-header);
   padding: 9px 12px;
   font-size: 12px;
   font-weight: 600;
-  color: #6c7a89;
+  color: var(--text-sub);
   text-align: left;
   white-space: nowrap;
-  border-bottom: 1px solid #e0e4ea;
+  border-bottom: 1px solid var(--gray-border);
 }
 
 /* 바디 */
 tbody td {
   padding: 9px 12px;
   font-size: 12.5px;
-  color: #1c2333;
-  border-bottom: 1px solid #f0f2f5;
+  color: var(--text);
+  border-bottom: 1px solid var(--gray-light);
 }
 tbody tr:hover         { background: #f5f7ff; }
 
 /* 홀수 행 강조 (선택적) */
-tbody tr:nth-child(odd) { background: #f8f9fb; }
+tbody tr:nth-child(odd) { background: var(--row-alt); }
 tbody tr:nth-child(odd):hover { background: #f0f3ff; }
 ```
 
 ### 8.3 행 상태 강조
 
 ```css
-/* 미수집 경고 행 */
+/* 미작성 팀원 행 경고 강조 */
 tbody tr.warn-row          { background: #fff8f0; }
 tbody tr.warn-row:hover    { background: #ffefd9; }
-
-/* 수집 항목 분류별 행 색상 */
-tr.cat-vital  td { background: #fffde7; }
-tr.cat-activity td { background: #e3f2fd; }
-tr.cat-sleep  td { background: #f3e5f5; }
-tr.cat-ai     td { background: #e8f5e9; }
-```
-
-### 8.4 배터리 표시
-
-```css
-.battery-track {
-  width: 36px; height: 10px;
-  background: #e8eaed;
-  border-radius: 3px;
-  border: 1px solid #d0d3d8;
-}
-.battery-fill.high  { background: #27ae60; }  /* 30% 이상 */
-.battery-fill.mid   { background: #f5a623; }  /* 21~30% */
-.battery-fill.low   { background: #e74c3c; }  /* 20% 이하 → 빨강 강조 */
 ```
 
 ---
@@ -462,7 +437,7 @@ tr.cat-ai     td { background: #e8f5e9; }
 ```css
 .sum-card {
   background: #ffffff;
-  border: 1px solid #e0e4ea;
+  border: 1px solid var(--gray-border);
   border-radius: 8px;
   padding: 14px 16px;
   display: flex;
@@ -475,19 +450,19 @@ tr.cat-ai     td { background: #e8f5e9; }
   display: flex; align-items: center; justify-content: center;
   font-size: 18px;
 }
-.card-label { font-size: 11px; color: #6c7a89; }
-.card-value { font-size: 22px; font-weight: 700; color: #1c2333; }
-.card-sub   { font-size: 10.5px; color: #6c7a89; }
+.card-label { font-size: 11px; color: var(--text-sub); }
+.card-value { font-size: 22px; font-weight: 700; color: var(--text); }
+.card-sub   { font-size: 10.5px; color: var(--text-sub); }
 ```
 
 ### 9.2 아이콘 배경색
 
 | 카드 | 아이콘 배경 |
 |------|------------|
-| 전체 환자 | `#eef2ff` |
-| 장치 할당 | `#e0f0ff` |
-| 정상 수집 | `#e8f8f0` |
-| 미수집 (경고) | `#fff3e0` |
+| 전체 팀원 | `#eef2ff` |
+| 제출 완료 | `#e8f8f0` |
+| 임시저장 | `#fff3e0` |
+| 미작성 | `#fdecea` |
 
 ---
 
@@ -526,7 +501,7 @@ tr.cat-ai     td { background: #e8f5e9; }
 /* 헤더 */
 .modal-header {
   padding: 16px 20px;
-  border-bottom: 1px solid #e0e4ea;
+  border-bottom: 1px solid var(--gray-border);
   display: flex; align-items: center; justify-content: space-between;
 }
 .modal-title { font-size: 14px; font-weight: 700; }
@@ -537,7 +512,7 @@ tr.cat-ai     td { background: #e8f5e9; }
 /* 푸터 */
 .modal-footer {
   padding: 14px 20px;
-  border-top: 1px solid #e0e4ea;
+  border-top: 1px solid var(--gray-border);
   display: flex; justify-content: flex-end; gap: 8px;
 }
 ```
@@ -564,7 +539,7 @@ tr.cat-ai     td { background: #e8f5e9; }
 ```css
 .toast {
   background: white;
-  border: 1px solid #e0e4ea;
+  border: 1px solid var(--gray-border);
   border-radius: 8px;
   padding: 12px 16px;
   min-width: 280px;
@@ -608,13 +583,13 @@ tr.cat-ai     td { background: #e8f5e9; }
 ```css
 .pagination {
   padding: 10px 16px;
-  border-top: 1px solid #e0e4ea;
+  border-top: 1px solid var(--gray-border);
   display: flex; align-items: center;
   justify-content: flex-end; gap: 3px;
 }
 .pg-btn {
   width: 26px; height: 26px;
-  border: 1px solid #e0e4ea;
+  border: 1px solid var(--gray-border);
   border-radius: 4px;
   background: white;
   font-size: 11px;
@@ -622,13 +597,13 @@ tr.cat-ai     td { background: #e8f5e9; }
   cursor: pointer;
 }
 .pg-btn.active {
-  background: #6b5ce7;
+  background: var(--primary);
   color: white;
-  border-color: #6b5ce7;
+  border-color: var(--primary);
 }
 .page-info {
   font-size: 12px;
-  color: #6c7a89;
+  color: var(--text-sub);
   margin-right: 8px;
 }
 ```
@@ -637,37 +612,36 @@ tr.cat-ai     td { background: #e8f5e9; }
 
 ## 13. 상태별 시각 규칙
 
-### 13.1 수집 상태
+### 13.1 주간업무 상태
 
-| 상태 | 조건 | 행 배경 | 배지 |
+| 상태 | 배지 | 행 배경 | 설명 |
 |------|------|---------|------|
-| ✅ 정상 | 최종 수집 24시간 이내 | 기본 | `badge-ok` |
-| ⚠️ 미수집 | 최종 수집 24시간 초과 | `#fff8f0` 주황 강조 | `badge-warn` |
-| — 미할당 | 장치 없음 | 기본 (텍스트 회색) | `badge-gray` |
+| SUBMITTED (제출완료) | `badge-ok` | 기본 | 해당 주차 보고서 제출 완료 |
+| DRAFT (임시저장) | `badge-warn` | `#fff8f0` 주황 강조 | 작성 중, 미제출 |
+| NOT_STARTED (미작성) | `badge-danger` | 기본 (텍스트 회색) | 아직 보고서 미생성 |
 
-### 13.2 장치 상태
+### 13.2 계정 상태
 
 | 상태 | 배지 | 설명 |
 |------|------|------|
-| AVAILABLE | `badge-ok` | 할당 가능 |
-| ASSIGNED | `badge-blue` | 현재 할당 중 |
-| MAINTENANCE | `badge-warn` | 점검 중 |
-| RETIRED | `badge-gray` | 폐기 |
-| LOST | `badge-red` | 분실 |
+| PENDING | `badge-warn` | 승인 대기 중 |
+| APPROVED | `badge-purple` | 승인 완료 |
+| ACTIVE | `badge-ok` | 정상 활성 계정 |
+| INACTIVE | `badge-danger` | 비활성(소프트 삭제) 계정 |
 
-### 13.3 배터리
+### 13.3 팀 / 프로젝트 상태
 
-| 잔량 | 색상 | 텍스트 처리 |
-|------|------|-------------|
-| 30% 이상 | `#27ae60` 초록 | 기본 |
-| 21~30% | `#f5a623` 주황 | 기본 |
-| 20% 이하 | `#e74c3c` 빨강 | **굵게 + 빨강** |
+| 상태 | 배지 | 설명 |
+|------|------|------|
+| ACTIVE | `badge-ok` | 진행 중 / 활성 |
+| HOLD | `badge-warn` | 보류 중 |
+| COMPLETED | `badge-gray` | 완료(비활성) |
 
-### 13.4 자동 갱신 인디케이터
+### 13.4 자동 저장 인디케이터
 
 ```css
-/* 상태 바 좌측 살아있는 점 */
-.refresh-dot {
+/* 자동 저장 중 살아있는 점 */
+.autosave-dot {
   width: 6px; height: 6px;
   border-radius: 50%;
   background: #27ae60;
@@ -685,17 +659,21 @@ tr.cat-ai     td { background: #e8f5e9; }
 
 ```css
 :root {
-  /* 색상 */
+  /* Primary */
   --primary:      #6b5ce7;
   --primary-dark: #5647cc;
   --primary-bg:   #ede9ff;
   --accent:       #f5a623;
+
+  /* Semantic */
   --ok:           #27ae60;
   --ok-bg:        #e8f8f0;
   --warn:         #e67e22;
   --warn-bg:      #fff3e0;
   --danger:       #e74c3c;
   --danger-bg:    #fdecea;
+
+  /* Neutral */
   --gray:         #6c7a89;
   --gray-light:   #f0f2f5;
   --gray-border:  #e0e4ea;
@@ -705,11 +683,20 @@ tr.cat-ai     td { background: #e8f5e9; }
   --row-alt:      #f8f9fb;
   --tbl-header:   #f4f6fa;
 
-  /* 사이드바 */
-  --sidebar-bg:   #181d2e;
-  --sidebar-w:    210px;
+  /* Sidebar */
+  --sidebar-bg:           #181d2e;
+  --sidebar-w:            210px;
+  --sidebar-active:       #252d48;
+  --sidebar-divider:      #2a3045;
+  --sidebar-text:         #8896b3;
+  --sidebar-menu-title:   #4a5470;
+  --sidebar-sub-active:   #a89ef5;
 
-  /* 레이아웃 */
+  /* Badge */
+  --badge-blue-bg:   #e0f0ff;
+  --badge-blue-text: #1a6bb5;
+
+  /* Layout */
   --header-h:     48px;
   --content-gap:  14px;
   --content-pad:  18px 20px;
@@ -718,5 +705,4 @@ tr.cat-ai     td { background: #e8f5e9; }
 
 ---
 
-*웨어러블 환자 모니터링 시스템 MVP — Web Style Guide v1.0*  
-*2026년 2월 확정*
+*주간업무보고 시스템 — Web Style Guide v2.0 / 2026년 3월 확정*
