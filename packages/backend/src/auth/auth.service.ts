@@ -110,7 +110,7 @@ export class AuthService {
     roles: string[];
     mustChangePassword: boolean;
     partId: string | null;
-    part: { name: string; teamId: string } | null;
+    part: { name: string; teamId: string; team: { name: string } } | null;
   }) {
     const payload = {
       sub: member.id,
@@ -144,6 +144,7 @@ export class AuthService {
         partId: member.partId,
         partName: member.part?.name ?? null,
         teamId: member.part?.teamId ?? null,
+        teamName: member.part?.team?.name ?? null,
       },
     };
   }

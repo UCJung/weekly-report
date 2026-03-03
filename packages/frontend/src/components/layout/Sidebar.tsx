@@ -236,7 +236,7 @@ export default function Sidebar() {
             <div className="flex-1 min-w-0">
               <p className="text-white text-[12px] font-medium truncate">{user.name}</p>
               <p className="text-[11px] truncate" style={{ color: 'var(--sidebar-text)' }}>
-                {currentTeam ? currentTeam.name : (user.partName || '팀 미선택')}
+                {currentTeam?.name || user.teamName || user.partName || '팀 미선택'}
                 {' · '}
                 {ROLE_LABELS[primaryRole] ?? primaryRole}
               </p>

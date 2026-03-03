@@ -11,6 +11,7 @@ export interface LoginResponse {
     partId: string;
     partName: string;
     teamId: string;
+    teamName: string;
     mustChangePassword?: boolean;
   };
 }
