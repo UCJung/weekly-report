@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { teamApi, GetTeamsParams } from '../api/team.api';
+import { teamApi, GetTeamsParams, TeamListItem } from '../api/team.api';
 
 export function useTeams(params?: GetTeamsParams) {
   return useQuery({
@@ -13,12 +13,14 @@ export function useMyTeams() {
     queryKey: ['my-teams'],
     queryFn: () =>
       teamApi.getMyTeams().then((r) =>
-        (r.data.data as any[]).map((t) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (r.data.data as any[]).map((t): TeamListItem => ({
           id: t.teamId ?? t.id,
           name: t.teamName ?? t.name,
           memberCount: t.memberCount ?? 0,
           isMember: true,
-          ...t,
+          leaderName: t.leaderName,
+          status: t.teamStatus ?? t.status,
         })),
       ),
   });
