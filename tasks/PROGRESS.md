@@ -1,6 +1,6 @@
 # Pipeline Progress
 
-> Last updated: 2026-03-01
+> Last updated: 2026-03-03
 > Mode: auto
 
 | TASK | Title | Status | Commit | Duration |
@@ -28,3 +28,22 @@
 - [2026-03-01] TASK-09 completed, committed 38fefe0
 - [2026-03-01] TASK-10 completed, committed 14a94da
 - [2026-03-01] ALL TASKS COMPLETE - Pipeline finished successfully
+
+## WORK-17: 코드 품질 개선 — CRITICAL/HIGH 이슈 수정
+
+| TASK | Title | Status | Commit |
+|------|-------|--------|--------|
+| WORK-17-TASK-01 | shared 타입 정합성 확보 | Done | (이전) |
+| WORK-17-TASK-02 | BE 보안/DTO/any 타입 개선 | Done | (이전) |
+| WORK-17-TASK-03 | BE part-summary + 필드명 정규화 | Done | (이전) |
+| WORK-17-TASK-04 | FE 주차 유틸 중복 제거 | Done | ac7e1be |
+| WORK-17-TASK-05 | BE DB 인덱스 마이그레이션 | Done | 895fc59 |
+| WORK-17-TASK-06 | FE 상수 통합 + useQuery 캐시 전략 | Done | 1867aa6 |
+| WORK-17-TASK-07 | 통합 검증 | Done | — |
+
+### WORK-17 Execution Log
+- [2026-03-03] WORK-17 파이프라인 시작 (TASK-04~07)
+- [2026-03-03] WORK-17-TASK-04 완료, commit ac7e1be (shared addWeeks, vite alias 정규식)
+- [2026-03-03] WORK-17-TASK-05 완료, commit 895fc59 (@@index 9개, spec isJoined→isMember)
+- [2026-03-03] WORK-17-TASK-06 완료, commit 1867aa6 (labels.ts, staleTime)
+- [2026-03-03] WORK-17-TASK-07 통합 검증: bun run build 3/3 성공, bun run test 134/134 통과
