@@ -4,6 +4,7 @@ import SummaryCard from '../components/ui/SummaryCard';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import { useAuthStore } from '../stores/authStore';
+import { useTeamStore } from '../stores/teamStore';
 import { useQuery } from '@tanstack/react-query';
 import { partApi, TeamWeeklyOverview } from '../api/part.api';
 import { exportApi } from '../api/export.api';
@@ -118,6 +119,7 @@ function buildPartSummaryRows(teamOverview: TeamWeeklyOverview[]): PartSummaryRo
 
 export default function Dashboard() {
   const { user } = useAuthStore();
+  const { currentTeamId } = useTeamStore();
   const navigate = useNavigate();
   const [currentWeek, setCurrentWeek] = useState(() => getWeekLabel(new Date()));
   const [exporting, setExporting] = useState(false);
@@ -125,7 +127,7 @@ export default function Dashboard() {
   const isLeader = user?.roles.includes('LEADER') ?? false;
   const isPartLeader = user?.roles.includes('PART_LEADER') ?? false;
   const partId = user?.partId ?? '';
-  const teamId = user?.teamId ?? '';
+  const teamId = currentTeamId ?? user?.teamId ?? '';
 
   const { data: teamOverview = [] } = useQuery({
     queryKey: ['team-weekly-overview', teamId, currentWeek],

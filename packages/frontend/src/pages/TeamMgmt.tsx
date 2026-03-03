@@ -17,6 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useAuthStore } from '../stores/authStore';
+import { useTeamStore } from '../stores/teamStore';
 import { useUiStore } from '../stores/uiStore';
 import {
   useTeamMembers,
@@ -204,8 +205,9 @@ function SortableMemberRow({ member, idx, onEdit }: SortableMemberRowProps) {
 // ── Main Component ─────────────────────────────────────────
 export default function TeamMgmt() {
   const { user } = useAuthStore();
+  const { currentTeamId } = useTeamStore();
   const { addToast } = useUiStore();
-  const teamId = user?.teamId ?? '';
+  const teamId = currentTeamId ?? user?.teamId ?? '';
 
   const [tabMode, setTabMode] = useState<TabMode>('members');
   const [partFilter, setPartFilter] = useState('');

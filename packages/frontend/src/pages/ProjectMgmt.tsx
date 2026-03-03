@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '../stores/authStore';
+import { useTeamStore } from '../stores/teamStore';
 import { useTeamProjects, useAddTeamProjects, useRemoveTeamProject, useReorderTeamProjects, useProjects } from '../hooks/useProjects';
 import { TeamProject } from '../api/project.api';
 import Badge from '../components/ui/Badge';
@@ -181,7 +182,8 @@ function AddProjectModal({ teamId, registeredIds, onClose }: AddProjectModalProp
 // ── 메인 컴포넌트 ─────────────────────────────────────────────
 export default function ProjectMgmt() {
   const { user } = useAuthStore();
-  const teamId = user?.teamId ?? '';
+  const { currentTeamId } = useTeamStore();
+  const teamId = currentTeamId ?? user?.teamId ?? '';
 
   const [removeTarget, setRemoveTarget] = useState<TeamProject | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);

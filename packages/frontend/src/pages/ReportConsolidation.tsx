@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { useTeamStore } from '../stores/teamStore';
 import { useUiStore } from '../stores/uiStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { partApi, SummaryWorkItem } from '../api/part.api';
@@ -48,6 +49,7 @@ type ScopeType = 'TEAM' | 'PART';
 
 export default function ReportConsolidation() {
   const { user } = useAuthStore();
+  const { currentTeamId } = useTeamStore();
   const { addToast } = useUiStore();
   const queryClient = useQueryClient();
   const [currentWeek, setCurrentWeek] = useState(() => getWeekLabel(new Date()));
@@ -60,7 +62,7 @@ export default function ReportConsolidation() {
 
   const isLeader = user?.roles.includes('LEADER') ?? false;
   const isPartLeader = user?.roles.includes('PART_LEADER') ?? false;
-  const teamId = user?.teamId ?? '';
+  const teamId = currentTeamId ?? user?.teamId ?? '';
   const partId = user?.partId ?? '';
 
   // LEADER: 전체/파트 선택 가능, PART_LEADER: 파트 고정
