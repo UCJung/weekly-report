@@ -5,9 +5,11 @@ node_modules/
 
 # Build outputs
 dist/
+dist-node/
 build/
 .next/
 .turbo/
+*.tsbuildinfo
 
 # Environment
 .env
@@ -15,11 +17,13 @@ build/
 .env.*.local
 .env.production
 
-# IDE
+# IDE & Tools
 .vscode/
 .idea/
 *.swp
 *.swo
+.claude/
+.serena/
 
 # OS
 .DS_Store
@@ -32,6 +36,9 @@ packages/backend/prisma/migrations/**/migration_lock.toml
 coverage/
 test-results/
 playwright-report/
+
+# Temp scripts
+analyze_excel*.mjs
 
 # Logs
 *.log
