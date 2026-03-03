@@ -4,12 +4,16 @@ import { HttpStatus } from '@nestjs/common';
 import { BusinessException } from '../common/filters/business-exception';
 
 const mockPrisma = {
+  teamMembership: {
+    findMany: mock(() => Promise.resolve([])),
+  },
   member: {
     findMany: mock(() => Promise.resolve([])),
     findUnique: mock(() => Promise.resolve(null)),
     create: mock(() => Promise.resolve({})),
     update: mock(() => Promise.resolve({})),
   },
+  $transaction: mock((ops: unknown) => Promise.resolve(ops)),
 };
 
 describe('MemberService', () => {
@@ -21,20 +25,50 @@ describe('MemberService', () => {
 
   describe('findByTeam', () => {
     it('should return members for a team', async () => {
-      const members = [
-        { id: '1', name: '홍길동', part: { name: 'DX' } },
-        { id: '2', name: '김철수', part: { name: 'DX' } },
+      const memberships = [
+        {
+          memberId: '1',
+          partId: 'part-1',
+          roles: ['MEMBER'],
+          sortOrder: 0,
+          part: { name: 'DX' },
+          member: {
+            id: '1',
+            name: '홍길동',
+            email: 'hong@test.com',
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        },
+        {
+          memberId: '2',
+          partId: 'part-1',
+          roles: ['MEMBER'],
+          sortOrder: 1,
+          part: { name: 'DX' },
+          member: {
+            id: '2',
+            name: '김철수',
+            email: 'kim@test.com',
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        },
       ];
-      mockPrisma.member.findMany.mockResolvedValueOnce(members as never);
+      mockPrisma.teamMembership.findMany.mockResolvedValueOnce(memberships as never);
 
       const result = await service.findByTeam('team-1');
       expect(result).toHaveLength(2);
+      expect(result[0].name).toBe('홍길동');
+      expect(result[0].partName).toBe('DX');
     });
 
     it('should filter by partId when provided', async () => {
-      mockPrisma.member.findMany.mockResolvedValueOnce([] as never);
+      mockPrisma.teamMembership.findMany.mockResolvedValueOnce([] as never);
       await service.findByTeam('team-1', 'part-1');
-      expect(mockPrisma.member.findMany).toHaveBeenCalled();
+      expect(mockPrisma.teamMembership.findMany).toHaveBeenCalled();
     });
   });
 
@@ -47,7 +81,7 @@ describe('MemberService', () => {
           name: '테스트',
           email: 'existing@test.com',
           password: 'password123',
-          role: 'MEMBER' as never,
+          roles: ['MEMBER'],
           partId: 'part-1',
         });
         expect(true).toBe(false); // should not reach
@@ -64,7 +98,7 @@ describe('MemberService', () => {
         name: '테스트',
         email: 'new@test.com',
         password: 'hashed',
-        role: 'MEMBER',
+        roles: ['MEMBER'],
         part: { name: 'DX' },
       } as never);
 
@@ -72,7 +106,7 @@ describe('MemberService', () => {
         name: '테스트',
         email: 'new@test.com',
         password: 'password123',
-        role: 'MEMBER' as never,
+        roles: ['MEMBER'],
         partId: 'part-1',
       });
 

@@ -1,8 +1,8 @@
-import { IsEnum, IsOptional, IsInt, IsString, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { AccountStatus } from '@prisma/client';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
-export class ListAccountsDto {
+export class ListAccountsDto extends PaginationDto {
   @IsOptional()
   @IsEnum(AccountStatus)
   status?: AccountStatus;
@@ -10,16 +10,4 @@ export class ListAccountsDto {
   @IsOptional()
   @IsString()
   search?: string;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  limit?: number = 20;
 }

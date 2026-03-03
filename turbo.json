@@ -10,8 +10,7 @@
       "persistent": true
     },
     "test": {
-      "dependsOn": ["build"],
-      "concurrency": 1
+      "dependsOn": ["build"]
     },
     "lint": {},
     "clean": {

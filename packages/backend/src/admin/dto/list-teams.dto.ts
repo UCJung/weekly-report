@@ -1,21 +1,9 @@
-import { IsEnum, IsOptional, IsInt, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsEnum, IsOptional } from 'class-validator';
 import { TeamStatus } from '@prisma/client';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
-export class ListTeamsDto {
+export class ListTeamsDto extends PaginationDto {
   @IsOptional()
   @IsEnum(TeamStatus)
   status?: TeamStatus;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  limit?: number = 20;
 }

@@ -1,5 +1,5 @@
 import { Injectable, HttpStatus } from '@nestjs/common';
-import { ReportStatus, SummaryScope } from '@prisma/client';
+import { Prisma, ReportStatus, SummaryScope } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BusinessException } from '../common/filters/business-exception';
 import { CreatePartSummaryDto } from './dto/create-part-summary.dto';
@@ -8,6 +8,18 @@ import { CreateSummaryDto } from './dto/create-summary.dto';
 import { MergeRowsDto } from './dto/merge-rows.dto';
 import { UpdateSummaryWorkItemDto } from './dto/update-summary-work-item.dto';
 import { getWeekRange } from './week-utils';
+
+/** Reusable Prisma include for WorkItems with project */
+const WORK_ITEMS_WITH_PROJECT = {
+  include: { project: true },
+  orderBy: { sortOrder: 'asc' as const },
+};
+
+/** Reusable Prisma include for SummaryWorkItems with project */
+const SUMMARY_ITEMS_WITH_PROJECT = {
+  orderBy: { sortOrder: 'asc' as const },
+  include: { project: true },
+};
 
 @Injectable()
 export class PartSummaryService {
@@ -18,10 +30,7 @@ export class PartSummaryService {
     return this.prisma.partSummary.findUnique({
       where: { partId_weekStart: { partId, weekStart: start } },
       include: {
-        summaryWorkItems: {
-          orderBy: { sortOrder: 'asc' },
-          include: { project: true },
-        },
+        summaryWorkItems: SUMMARY_ITEMS_WITH_PROJECT,
       },
     });
   }
@@ -59,10 +68,7 @@ export class PartSummaryService {
       where: { id: summary.id },
       data: { ...(dto.status && { status: dto.status }) },
       include: {
-        summaryWorkItems: {
-          orderBy: { sortOrder: 'asc' },
-          include: { project: true },
-        },
+        summaryWorkItems: SUMMARY_ITEMS_WITH_PROJECT,
       },
     });
   }
@@ -162,10 +168,7 @@ export class PartSummaryService {
         weeklyReports: {
           where: { weekStart: start },
           include: {
-            workItems: {
-              include: { project: true },
-              orderBy: { sortOrder: 'asc' },
-            },
+            workItems: WORK_ITEMS_WITH_PROJECT,
           },
         },
       },
@@ -301,7 +304,7 @@ export class PartSummaryService {
       if (existing) {
         return this.prisma.partSummary.findUnique({
           where: { id: existing.id },
-          include: { summaryWorkItems: { orderBy: { sortOrder: 'asc' }, include: { project: true } } },
+          include: { summaryWorkItems: SUMMARY_ITEMS_WITH_PROJECT },
         });
       }
     }
@@ -318,7 +321,7 @@ export class PartSummaryService {
         title,
         status: ReportStatus.DRAFT,
       },
-      include: { summaryWorkItems: { orderBy: { sortOrder: 'asc' }, include: { project: true } } },
+      include: { summaryWorkItems: SUMMARY_ITEMS_WITH_PROJECT },
     });
   }
 
@@ -328,7 +331,7 @@ export class PartSummaryService {
     if (params.scope === SummaryScope.PART && params.partId) {
       return this.prisma.partSummary.findUnique({
         where: { partId_weekStart: { partId: params.partId, weekStart: start } },
-        include: { summaryWorkItems: { orderBy: { sortOrder: 'asc' }, include: { project: true } } },
+        include: { summaryWorkItems: SUMMARY_ITEMS_WITH_PROJECT },
       });
     }
 
@@ -339,7 +342,7 @@ export class PartSummaryService {
         teamId: params.teamId,
         weekStart: start,
       },
-      include: { summaryWorkItems: { orderBy: { sortOrder: 'asc' }, include: { project: true } } },
+      include: { summaryWorkItems: SUMMARY_ITEMS_WITH_PROJECT },
     });
   }
 
@@ -355,7 +358,7 @@ export class PartSummaryService {
     }
 
     // scope에 따라 팀원 범위 결정
-    let memberFilter: { partId?: string; isActive: boolean; part?: { teamId: string } };
+    let memberFilter: Prisma.MemberWhereInput;
     if (summary.scope === SummaryScope.PART && summary.partId) {
       memberFilter = { partId: summary.partId, isActive: true };
     } else if (summary.scope === SummaryScope.TEAM && summary.teamId) {
@@ -369,16 +372,13 @@ export class PartSummaryService {
     }
 
     const members = await this.prisma.member.findMany({
-      where: memberFilter as any,
+      where: memberFilter,
       include: {
         part: true,
         weeklyReports: {
           where: { weekStart: summary.weekStart },
           include: {
-            workItems: {
-              include: { project: true },
-              orderBy: { sortOrder: 'asc' },
-            },
+            workItems: WORK_ITEMS_WITH_PROJECT,
           },
         },
       },
@@ -422,7 +422,7 @@ export class PartSummaryService {
 
     return this.prisma.partSummary.findUnique({
       where: { id: summaryId },
-      include: { summaryWorkItems: { orderBy: { sortOrder: 'asc' }, include: { project: true } } },
+      include: { summaryWorkItems: SUMMARY_ITEMS_WITH_PROJECT },
     });
   }
 

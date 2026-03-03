@@ -63,7 +63,7 @@ export class TeamJoinService {
     const result = teams.map((team) => ({
       ...team,
       memberCount: team._count.teamMemberships,
-      isJoined: myTeamIds.includes(team.id),
+      isMember: myTeamIds.includes(team.id),
       _count: undefined,
     }));
 

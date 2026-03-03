@@ -1,5 +1,6 @@
 import { Injectable, HttpStatus, Logger } from '@nestjs/common';
-import { AccountStatus, TeamStatus, MemberRole } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
+import { AccountStatus, TeamStatus, MemberRole, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { BusinessException } from '../common/filters/business-exception';
@@ -15,7 +16,10 @@ import { ListGlobalProjectsDto } from './dto/list-global-projects.dto';
 export class AdminService {
   private readonly logger = new Logger(AdminService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private configService: ConfigService,
+  ) {}
 
   // ──────────────────────────────────────
   // 계정 관리
@@ -26,7 +30,7 @@ export class AdminService {
     const limit = dto.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.MemberWhereInput = {};
     if (dto.status) {
       where.accountStatus = dto.status;
     }
@@ -157,7 +161,8 @@ export class AdminService {
       );
     }
 
-    const hashedPassword = await bcrypt.hash('password123', 10);
+    const defaultPassword = this.configService.get<string>('DEFAULT_PASSWORD', 'changeme!2026');
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
     const updated = await this.prisma.member.update({
       where: { id },
       data: {
@@ -327,7 +332,7 @@ export class AdminService {
     const limit = dto.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.ProjectWhereInput = {};
     if (dto.category) {
       where.category = dto.category;
     }
