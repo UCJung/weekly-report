@@ -21,6 +21,8 @@ export interface Member {
   role: MemberRole;
   partId: string;
   isActive: boolean;
+  position?: string | null;
+  jobTitle?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

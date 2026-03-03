@@ -1,5 +1,5 @@
 export type ProjectCategory = 'COMMON' | 'EXECUTION';
-export type ProjectStatus = 'ACTIVE' | 'INACTIVE';
+export type ProjectStatus = 'PENDING' | 'ACTIVE' | 'INACTIVE';
 
 export interface Project {
   id: string;
@@ -8,4 +8,7 @@ export interface Project {
   category: ProjectCategory;
   status: ProjectStatus;
   teamId: string;
+  managerId?: string | null;
+  department?: string | null;
+  description?: string | null;
 }

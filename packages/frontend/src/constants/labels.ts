@@ -23,6 +23,48 @@ export const REPORT_STATUS_VARIANT: Record<string, 'ok' | 'warn' | 'danger' | 'g
 };
 
 export const PROJECT_STATUS_LABEL: Record<string, string> = {
+  PENDING: '승인대기',
   ACTIVE: '활성',
   INACTIVE: '비활성',
+};
+
+export const POSITION_LABEL: Record<string, string> = {
+  DIRECTOR: '이사',
+  GENERAL_MANAGER: '부장',
+  DEPUTY_MANAGER: '차장',
+  ASSISTANT_MANAGER: '대리',
+  STAFF: '사원',
+  PRINCIPAL_RESEARCHER: '책임연구원',
+  SENIOR_RESEARCHER: '선임연구원',
+  RESEARCHER: '연구원',
+  ASSOCIATE_RESEARCHER: '전임연구원',
+};
+
+export const ATTENDANCE_LABEL: Record<string, string> = {
+  WORK: '근무',
+  HOLIDAY_WORK: '휴일근무',
+  ANNUAL_LEAVE: '연차',
+  HALF_DAY_LEAVE: '반차',
+  HOLIDAY: '공휴일',
+};
+
+export const WORK_TYPE_LABEL: Record<string, string> = {
+  OFFICE: '내근',
+  FIELD: '외근',
+  REMOTE: '재택',
+  BUSINESS_TRIP: '출장',
+};
+
+export const TIMESHEET_STATUS_LABEL: Record<string, string> = {
+  DRAFT: '작성중',
+  SUBMITTED: '제출완료',
+  APPROVED: '승인완료',
+  REJECTED: '반려',
+};
+
+export const TIMESHEET_STATUS_VARIANT: Record<string, 'ok' | 'warn' | 'danger' | 'gray'> = {
+  DRAFT: 'gray',
+  SUBMITTED: 'warn',
+  APPROVED: 'ok',
+  REJECTED: 'danger',
 };
