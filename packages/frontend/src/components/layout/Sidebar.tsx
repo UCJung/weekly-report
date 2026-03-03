@@ -13,6 +13,7 @@ import {
   KeyRound,
   Building2,
   HelpCircle,
+  Clock,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTeamStore } from '../../stores/teamStore';
@@ -44,6 +45,7 @@ const MENU_GROUPS: MenuGroup[] = [
     items: [
       { path: '/', label: '대시보드', icon: <LayoutDashboard size={14} /> },
       { path: '/my-weekly', label: '내 주간업무', icon: <FileEdit size={14} /> },
+      { path: '/timesheet', label: '근무시간표', icon: <Clock size={14} /> },
     ],
   },
   {

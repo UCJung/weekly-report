@@ -17,6 +17,7 @@ import AccountManagement from './pages/admin/AccountManagement';
 import TeamManagement from './pages/admin/TeamManagement';
 import ProjectManagement from './pages/admin/ProjectManagement';
 import TeamLanding from './pages/TeamLanding';
+import MyTimesheet from './pages/MyTimesheet';
 import { useAuthStore } from './stores/authStore';
 
 const queryClient = new QueryClient({
@@ -54,6 +55,7 @@ export default function App() {
             {/* 메인 화면 */}
             <Route index element={<Dashboard />} />
             <Route path="/my-weekly" element={<MyWeeklyReport />} />
+            <Route path="/timesheet" element={<MyTimesheet />} />
             <Route
               path="/part-status"
               element={
