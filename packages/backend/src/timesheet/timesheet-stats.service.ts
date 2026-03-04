@@ -32,7 +32,10 @@ export class TimesheetStatsService {
       where: { memberId: { in: memberIds }, teamId, yearMonth },
       include: {
         entries: {
-          include: { workLogs: true },
+          select: {
+            attendance: true,
+            workLogs: { select: { hours: true } },
+          },
         },
         approvals: {
           include: { approver: { select: { id: true, name: true } } },
@@ -204,7 +207,7 @@ export class TimesheetStatsService {
   }
 
   /** PM: 월간 투입현황 — 해당 프로젝트에 투입된 인원/시간/비율 */
-  async getProjectAllocationMonthly(projectId: string, yearMonth: string, requesterId: string) {
+  async getProjectAllocationMonthly(projectId: string, yearMonth: string, _requesterId: string) {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       select: { id: true, name: true, code: true, managerId: true },
@@ -213,9 +216,6 @@ export class TimesheetStatsService {
     if (!project) {
       throw new BusinessException('PROJECT_NOT_FOUND', '프로젝트를 찾을 수 없습니다.', HttpStatus.NOT_FOUND);
     }
-
-    // M+5 자동승인 체크: yearMonth 종료 후 5일 경과 시 auto-approve
-    await this.checkAndAutoApprove(projectId, yearMonth, requesterId);
 
     // 해당 프로젝트의 워크로그가 있는 모든 시간표 조회
     const entries = await this.prisma.timesheetEntry.findMany({
@@ -437,22 +437,34 @@ export class TimesheetStatsService {
 
   /** 관리자: 전체 현황 — 팀별 제출/승인 현황 요약 */
   async getAdminOverview(yearMonth: string) {
-    const teams = await this.prisma.team.findMany({
-      where: { teamStatus: TeamStatus.ACTIVE },
-      include: {
-        teamMemberships: {
-          include: {
-            member: { select: { id: true, name: true } },
+    // ISSUE-11: 독립 쿼리 4개를 Promise.all로 병렬 실행
+    const [teams, allTimesheets, activeProjects, projectsWithEntries] = await Promise.all([
+      this.prisma.team.findMany({
+        where: { teamStatus: TeamStatus.ACTIVE },
+        include: {
+          teamMemberships: {
+            include: {
+              member: { select: { id: true, name: true } },
+            },
           },
         },
-      },
-    });
-
-    // B-4: N+1 해소 — 전체 yearMonth 시간표를 한 번에 조회 후 teamId별 그룹핑
-    const allTimesheets = await this.prisma.monthlyTimesheet.findMany({
-      where: { yearMonth },
-      include: { approvals: true },
-    });
+      }),
+      this.prisma.monthlyTimesheet.findMany({
+        where: { yearMonth },
+        include: { approvals: true },
+      }),
+      this.prisma.project.findMany({
+        where: { status: ProjectStatus.ACTIVE, managerId: { not: null } },
+        select: { id: true, managerId: true },
+      }),
+      this.prisma.timesheetWorkLog.findMany({
+        where: {
+          entry: { timesheet: { yearMonth } },
+        },
+        select: { projectId: true },
+        distinct: ['projectId'],
+      }),
+    ]);
 
     const timesheetsByTeam = new Map<string, typeof allTimesheets>();
     for (const ts of allTimesheets) {
@@ -500,42 +512,32 @@ export class TimesheetStatsService {
     };
 
     // 프로젝트 승인 현황: 해당 월에 투입 기록이 있는 활성 프로젝트 + PM 승인 여부
-    const activeProjects = await this.prisma.project.findMany({
-      where: { status: ProjectStatus.ACTIVE, managerId: { not: null } },
-      select: { id: true, managerId: true },
-    });
-
-    // 해당 월 timesheet에서 workLog가 있는 프로젝트만 필터
-    const projectsWithEntries = await this.prisma.timesheetWorkLog.findMany({
-      where: {
-        entry: { timesheet: { yearMonth } },
-      },
-      select: { projectId: true },
-      distinct: ['projectId'],
-    });
+    // (activeProjects, projectsWithEntries는 Promise.all에서 이미 조회됨)
     const projectIdsWithEntries = new Set(projectsWithEntries.map((w) => w.projectId));
     const relevantProjects = activeProjects.filter((p) => projectIdsWithEntries.has(p.id));
 
-    // B-4: PM 승인 현황도 일괄 조회 (루프 내 findFirst 제거)
+    // B-4: PM 승인 현황도 일괄 조회 + pmApprovals / timesheetWorkLogs 병렬 실행
     let approvedProjects = 0;
     if (relevantProjects.length > 0 && allTimesheets.length > 0) {
       const allTimesheetIds = allTimesheets.map((ts) => ts.id);
-      const pmApprovals = await this.prisma.timesheetApproval.findMany({
-        where: {
-          approvalType: ApprovalType.PROJECT_MANAGER,
-          timesheetId: { in: allTimesheetIds },
-        },
-        select: { approverId: true, timesheetId: true },
-      });
 
-      // (timesheetId, projectId) 매핑을 위한 워크로그 조회
-      const timesheetWorkLogs = await this.prisma.timesheetWorkLog.findMany({
-        where: {
-          entry: { timesheet: { yearMonth } },
-          projectId: { in: relevantProjects.map((p) => p.id) },
-        },
-        select: { projectId: true, entry: { select: { timesheetId: true } } },
-      });
+      const [pmApprovals, timesheetWorkLogs] = await Promise.all([
+        this.prisma.timesheetApproval.findMany({
+          where: {
+            approvalType: ApprovalType.PROJECT_MANAGER,
+            timesheetId: { in: allTimesheetIds },
+          },
+          select: { approverId: true, timesheetId: true },
+        }),
+        // (timesheetId, projectId) 매핑을 위한 워크로그 조회
+        this.prisma.timesheetWorkLog.findMany({
+          where: {
+            entry: { timesheet: { yearMonth } },
+            projectId: { in: relevantProjects.map((p) => p.id) },
+          },
+          select: { projectId: true, entry: { select: { timesheetId: true } } },
+        }),
+      ]);
 
       // (timesheetId, projectId) 집합
       const timesheetProjectSet = new Set<string>();
@@ -564,6 +566,11 @@ export class TimesheetStatsService {
     };
   }
 
+  /** M+5 자동승인 트리거: GET 부수효과 없이 명시적 POST 호출 전용 */
+  async triggerAutoApprove(projectId: string, yearMonth: string, approverId: string) {
+    return this.checkAndAutoApprove(projectId, yearMonth, approverId);
+  }
+
   /** M+5 자동승인: yearMonth 종료 후 5일 경과 시 미승인 시간표 자동 승인 */
   private async checkAndAutoApprove(projectId: string, yearMonth: string, approverId: string) {
     const [year, month] = yearMonth.split('-').map(Number);
@@ -584,20 +591,21 @@ export class TimesheetStatsService {
       },
     });
 
-    for (const ts of timesheets) {
-      if (ts.approvals.length === 0) {
-        await this.prisma.timesheetApproval.create({
-          data: {
-            timesheetId: ts.id,
-            approverId,
-            approvalType: ApprovalType.PROJECT_MANAGER,
-            status: TimesheetStatus.APPROVED,
-            approvedAt: new Date(),
-            autoApproved: true,
-          },
-        });
-        this.logger.log(`M+5 자동승인: timesheetId=${ts.id}, projectId=${projectId}`);
-      }
+    const toApprove = timesheets.filter((ts) => ts.approvals.length === 0);
+    if (toApprove.length > 0) {
+      const now = new Date();
+      await this.prisma.timesheetApproval.createMany({
+        data: toApprove.map((ts) => ({
+          timesheetId: ts.id,
+          approverId,
+          approvalType: ApprovalType.PROJECT_MANAGER,
+          status: TimesheetStatus.APPROVED,
+          approvedAt: now,
+          autoApproved: true,
+        })),
+        skipDuplicates: true,
+      });
+      this.logger.log(`M+5 자동승인: ${toApprove.length}건, projectId=${projectId}, yearMonth=${yearMonth}`);
     }
   }
 }

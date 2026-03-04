@@ -183,6 +183,16 @@ export class TimesheetController {
     return this.timesheetApprovalService.leaderReject(id, memberId, dto.comment);
   }
 
+  /** POST /api/v1/timesheets/auto-approve — M+5 자동승인 트리거 (GET 부수효과 제거 후 명시적 호출) */
+  @Post('timesheets/auto-approve')
+  async triggerAutoApprove(
+    @CurrentUser('id') memberId: string,
+    @Body('projectId') projectId: string,
+    @Body('yearMonth') yearMonth: string,
+  ) {
+    return this.timesheetStatsService.triggerAutoApprove(projectId, yearMonth, memberId);
+  }
+
   /** POST /api/v1/timesheets/project-approve?projectId=&yearMonth= — PM 월간 승인 */
   @Post('timesheets/project-approve')
   async projectApprove(
