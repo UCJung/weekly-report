@@ -136,8 +136,6 @@ export class AuthService {
         name: member.name,
         email: member.email,
         roles: member.roles,
-        partId: null,
-        partName: null,
         teamId: null,
         teamName: null,
       },
@@ -220,7 +218,6 @@ export class AuthService {
   async getMe(userId: string) {
     const member = await this.prisma.member.findUnique({
       where: { id: userId },
-      include: { part: { include: { team: true } } },
     });
     if (!member) {
       throw new UnauthorizedException('사용자를 찾을 수 없습니다.');

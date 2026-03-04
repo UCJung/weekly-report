@@ -53,7 +53,6 @@ export default function PartStatus() {
   const [viewMode, setViewMode] = useState<ViewMode>('by-project');
 
   const teamId = currentTeamId ?? user?.teamId ?? '';
-  const userPartId = user?.partId ?? '';
 
   // ── 파트 목록 (LEADER만 사용) ──
   const { data: parts = [] } = useQuery({
@@ -62,6 +61,17 @@ export default function PartStatus() {
     enabled: isLeader && !!teamId,
     staleTime: 60_000,
   });
+
+  // PART_LEADER의 파트 ID/이름은 TeamMembership에서 조회
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ['members', teamId],
+    queryFn: () => teamApi.getMembers(teamId).then((r) => r.data.data),
+    enabled: !isLeader && !!teamId,
+    staleTime: 60_000,
+  });
+  const currentUserMember = !isLeader ? teamMembers.find((m) => m.id === user?.id) : undefined;
+  const userPartId = currentUserMember?.partId ?? '';
+  const userPartName = currentUserMember?.partName ?? '';
 
   // ── 업무 현황 데이터 조회 ──
   // LEADER: 전체 팀원 조회 (teams/:teamId/members-weekly-status)
@@ -211,8 +221,8 @@ export default function PartStatus() {
   const partOptions = useMemo(() => {
     if (isLeader) return parts;
     // PART_LEADER: 자기 파트만
-    return [{ id: userPartId, name: user?.partName ?? '' }];
-  }, [isLeader, parts, userPartId, user]);
+    return [{ id: userPartId, name: userPartName }];
+  }, [isLeader, parts, userPartId, userPartName]);
 
   const hasFilters =
     selectedPartId !== 'all' ||
@@ -314,7 +324,7 @@ export default function PartStatus() {
             </Select>
           ) : (
             <span className="text-[12.5px] font-medium text-[var(--text)] px-2 py-1 bg-[var(--tbl-header)] rounded border border-[var(--gray-border)]">
-              {user?.partName}
+              {userPartName}
             </span>
           )}
           <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>

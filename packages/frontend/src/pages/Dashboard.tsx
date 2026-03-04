@@ -8,6 +8,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useTeamStore } from '../stores/teamStore';
 import { useQuery } from '@tanstack/react-query';
 import { partApi, TeamWeeklyOverview } from '../api/part.api';
+import { teamApi } from '../api/team.api';
 import { exportApi } from '../api/export.api';
 import { getWeekLabel, addWeeks, formatWeekLabel } from '@uc-teamspace/shared/constants/week-utils';
 import {
@@ -112,8 +113,16 @@ export default function Dashboard() {
 
   const isLeader = user?.roles.includes('LEADER') ?? false;
   const isPartLeader = user?.roles.includes('PART_LEADER') ?? false;
-  const partId = user?.partId ?? '';
   const teamId = currentTeamId ?? user?.teamId ?? '';
+
+  // PART_LEADER의 파트 ID는 TeamMembership에서 조회
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ['members', teamId],
+    queryFn: () => teamApi.getMembers(teamId).then((r) => r.data.data),
+    enabled: isPartLeader && !!teamId,
+    staleTime: 60_000,
+  });
+  const partId = teamMembers.find((m) => m.id === user?.id)?.partId ?? '';
 
   // ─── 주간업무보고 데이터 ───
   const { data: teamOverview = [] } = useQuery({

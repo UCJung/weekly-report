@@ -195,7 +195,6 @@ describe('AuthService', () => {
       expect(result.refreshToken).toBe('mock-token');
       expect(result.mustChangePassword).toBe(false);
       expect(result.user.id).toBe('user-1');
-      expect(result.user.partId).toBeNull();
       expect(result.user.teamId).toBeNull();
     });
 

@@ -36,7 +36,6 @@ model Part {
   sortOrder Int    @default(0)
 
   team            Team             @relation(fields: [teamId], references: [id])
-  members         Member[]
   partSummaries   PartSummary[]
   teamMemberships TeamMembership[]
 
@@ -51,7 +50,6 @@ model Member {
   email              String        @unique
   password           String
   roles              MemberRole[]  @default([MEMBER])
-  partId             String?
   isActive           Boolean       @default(true)
   sortOrder          Int           @default(0)
   accountStatus      AccountStatus @default(PENDING)
@@ -59,7 +57,6 @@ model Member {
   position           Position?
   jobTitle           String?
 
-  part                 Part?                @relation(fields: [partId], references: [id])
   weeklyReports        WeeklyReport[]
   teamMemberships      TeamMembership[]
   teamJoinRequests     TeamJoinRequest[]

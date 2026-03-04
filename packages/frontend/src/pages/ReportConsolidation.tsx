@@ -4,6 +4,7 @@ import { useTeamStore } from '../stores/teamStore';
 import { useUiStore } from '../stores/uiStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { partApi, SummaryWorkItem } from '../api/part.api';
+import { teamApi } from '../api/team.api';
 import { exportApi } from '../api/export.api';
 import GridCell from '../components/grid/GridCell';
 import Badge from '../components/ui/Badge';
@@ -29,7 +30,17 @@ export default function ReportConsolidation() {
 
   const isLeader = user?.roles.includes('LEADER') ?? false;
   const teamId = currentTeamId ?? user?.teamId ?? '';
-  const partId = user?.partId ?? '';
+
+  // PART_LEADER의 파트 ID/이름은 TeamMembership에서 조회
+  const { data: teamMembers = [] } = useQuery({
+    queryKey: ['members', teamId],
+    queryFn: () => teamApi.getMembers(teamId).then((r) => r.data.data),
+    enabled: !isLeader && !!teamId,
+    staleTime: 60_000,
+  });
+  const currentUserMember = !isLeader ? teamMembers.find((m) => m.id === user?.id) : undefined;
+  const partId = currentUserMember?.partId ?? '';
+  const userPartName = currentUserMember?.partName ?? '파트';
 
   // LEADER: 전체/파트 선택 가능, PART_LEADER: 파트 고정
   const [scope, setScope] = useState<ScopeType>(isLeader ? 'TEAM' : 'PART');
@@ -299,7 +310,7 @@ export default function ReportConsolidation() {
           </div>
         ) : (
           <span className="text-[12px] text-[var(--text-sub)]">
-            {user?.partName ?? '파트'}
+            {userPartName}
           </span>
         )}
 

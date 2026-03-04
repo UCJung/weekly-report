@@ -28,7 +28,7 @@ export class TeamService {
     return this.prisma.part.findMany({
       where: { teamId },
       include: {
-        _count: { select: { members: true } },
+        _count: { select: { teamMemberships: true } },
       },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });

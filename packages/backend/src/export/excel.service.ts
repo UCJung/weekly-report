@@ -23,9 +23,13 @@ export class ExcelService {
 
     const part = await this.prisma.part.findUnique({
       where: { id: partId },
+    });
+
+    // TeamMembership을 통해 파트 소속 멤버 조회 (isActive=true인 멤버만)
+    const memberships = await this.prisma.teamMembership.findMany({
+      where: { partId, member: { isActive: true } },
       include: {
-        members: {
-          where: { isActive: true },
+        member: {
           include: {
             weeklyReports: {
               where: { weekStart: start },
@@ -39,6 +43,7 @@ export class ExcelService {
           },
         },
       },
+      orderBy: { sortOrder: 'asc' },
     });
 
     const workbook = new ExcelJS.Workbook();
@@ -47,7 +52,8 @@ export class ExcelService {
     this.setupHeaders(sheet);
 
     let rowIdx = 2;
-    for (const member of part?.members ?? []) {
+    for (const ms of memberships) {
+      const member = ms.member;
       const report = member.weeklyReports[0];
       const items = report?.workItems ?? [];
 
@@ -95,26 +101,7 @@ export class ExcelService {
 
     const team = await this.prisma.team.findUnique({
       where: { id: teamId },
-      include: {
-        parts: {
-          include: {
-            members: {
-              where: { isActive: true },
-              include: {
-                weeklyReports: {
-                  where: { weekStart: start },
-                  include: {
-                    workItems: {
-                      include: { project: true },
-                      orderBy: { sortOrder: 'asc' },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      include: { parts: { orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] } },
     });
 
     const workbook = new ExcelJS.Workbook();
@@ -124,7 +111,29 @@ export class ExcelService {
 
     let rowIdx = 2;
     for (const part of team?.parts ?? []) {
-      for (const member of part.members) {
+      // TeamMembership을 통해 파트 소속 멤버 조회 (isActive=true인 멤버만)
+      const memberships = await this.prisma.teamMembership.findMany({
+        where: { partId: part.id, teamId, member: { isActive: true } },
+        include: {
+          member: {
+            include: {
+              weeklyReports: {
+                where: { weekStart: start },
+                include: {
+                  workItems: {
+                    include: { project: true },
+                    orderBy: { sortOrder: 'asc' },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { sortOrder: 'asc' },
+      });
+
+      for (const ms of memberships) {
+        const member = ms.member;
         const report = member.weeklyReports[0];
         const items = report?.workItems ?? [];
 
