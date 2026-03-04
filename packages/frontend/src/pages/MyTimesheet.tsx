@@ -542,10 +542,7 @@ export default function MyTimesheet() {
     <div
       className="flex flex-col"
       style={{
-        flex: 1,
-        minHeight: 0,
-        overflow: 'hidden',
-        ...(isFull ? { height: '100vh' } : {}),
+        ...(isFull ? { flex: 1, minHeight: 0, overflow: 'hidden', height: '100vh' } : { height: '100%' }),
       }}
     >
       {/* 툴바 (전체화면 시 헤더 역할) */}
@@ -641,31 +638,28 @@ export default function MyTimesheet() {
   }
 
   return (
-    <div className="flex flex-col h-full" style={{ backgroundColor: 'var(--gray-light)' }}>
-      {/* 헤더 */}
+    <div>
+      {/* 툴바 카드 */}
       <div
-        className="flex items-center justify-between px-6 py-3 flex-shrink-0"
-        style={{
-          backgroundColor: 'white',
-          borderBottom: '1px solid var(--gray-border)',
-        }}
+        className="bg-white rounded-lg border border-[var(--gray-border)] flex items-center gap-3 mb-4"
+        style={{ padding: '10px 16px' }}
       >
-        <div className="flex items-center gap-4">
-          <h1 className="text-[16px] font-semibold" style={{ color: 'var(--text)' }}>
-            근무시간표
-          </h1>
-          <div className="flex items-center gap-1">
-            <button onClick={() => setYearMonth(getPreviousYearMonth(yearMonth))} className="p-1 rounded hover:bg-gray-100 transition-colors" style={{ color: 'var(--text-sub)' }}><ChevronLeft size={16} /></button>
-            <span className="text-[14px] font-medium min-w-[96px] text-center" style={{ color: 'var(--text)' }}>{formatYearMonth(yearMonth)}</span>
-            <button onClick={() => setYearMonth(getNextYearMonth(yearMonth))} className="p-1 rounded hover:bg-gray-100 transition-colors" style={{ color: 'var(--text-sub)' }}><ChevronRight size={16} /></button>
-          </div>
-          {timesheet && (
+        <h1 className="text-[16px] font-semibold" style={{ color: 'var(--text)' }}>
+          근무시간표
+        </h1>
+        <div className="w-px h-5 bg-[var(--gray-border)]" />
+        <button onClick={() => setYearMonth(getPreviousYearMonth(yearMonth))} className="p-1 rounded hover:bg-gray-100 transition-colors" style={{ color: 'var(--text-sub)' }}><ChevronLeft size={16} /></button>
+        <span className="text-[14px] font-medium min-w-[96px] text-center" style={{ color: 'var(--text)' }}>{formatYearMonth(yearMonth)}</span>
+        <button onClick={() => setYearMonth(getNextYearMonth(yearMonth))} className="p-1 rounded hover:bg-gray-100 transition-colors" style={{ color: 'var(--text-sub)' }}><ChevronRight size={16} /></button>
+        {timesheet && (
+          <>
+            <div className="w-px h-5 bg-[var(--gray-border)]" />
             <Badge variant={TIMESHEET_STATUS_VARIANT[timesheet.status] ?? 'gray'}>
               {TIMESHEET_STATUS_LABEL[timesheet.status] ?? timesheet.status}
             </Badge>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
+          </>
+        )}
+        <div className="flex items-center gap-2 ml-auto">
           {!isSubmitted && allProjects.length > 0 && (
             <ProjectMultiSelectDropdown projects={allProjects} selectedIds={activeProjectIds} onAdd={handleAddProjects} onRemove={handleRemoveProject} />
           )}
@@ -684,33 +678,31 @@ export default function MyTimesheet() {
         </div>
       )}
 
-      {/* 알림 + 그리드 (헤더와 동일 전체 폭) */}
-      {!isLoading && (
-        <div className="flex-1 min-h-0 flex flex-col" style={{ overflow: 'hidden' }}>
-          {/* 검증 오류 */}
-          {validationErrors.length > 0 && !isSubmitted && (
-            <div className="px-6 py-2 flex items-start gap-2 text-[12px] flex-shrink-0" style={{ backgroundColor: 'var(--warn-bg)', borderBottom: '1px solid var(--warn)', color: 'var(--warn)' }}>
-              <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
-              <div>
-                <span className="font-semibold">검증 오류 {validationErrors.length}건:</span>{' '}
-                {validationErrors.slice(0, 3).join(' / ')}
-                {validationErrors.length > 3 && ` 외 ${validationErrors.length - 3}건`}
-              </div>
-            </div>
-          )}
-
-          {/* 읽기 전용 배너 */}
-          {isSubmitted && (
-            <div className="px-6 py-2 flex items-center gap-2 text-[12px] flex-shrink-0" style={{ backgroundColor: 'var(--ok-bg)', borderBottom: '1px solid var(--ok)', color: 'var(--ok)' }}>
-              <CheckCircle size={14} />
-              <span>제출 완료 — 읽기 전용 모드입니다.</span>
-            </div>
-          )}
-
-          {/* 그리드 */}
-          <div className="flex flex-col flex-1 min-h-0" style={{ overflow: 'hidden' }}>
-            {renderGridPanel(false)}
+      {/* 알림 */}
+      {!isLoading && validationErrors.length > 0 && !isSubmitted && (
+        <div className="rounded-lg px-4 py-2 flex items-start gap-2 text-[12px] mb-3" style={{ backgroundColor: 'var(--warn-bg)', border: '1px solid var(--warn)', color: 'var(--warn)' }}>
+          <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+          <div>
+            <span className="font-semibold">검증 오류 {validationErrors.length}건:</span>{' '}
+            {validationErrors.slice(0, 3).join(' / ')}
+            {validationErrors.length > 3 && ` 외 ${validationErrors.length - 3}건`}
           </div>
+        </div>
+      )}
+      {!isLoading && isSubmitted && (
+        <div className="rounded-lg px-4 py-2 flex items-center gap-2 text-[12px] mb-3" style={{ backgroundColor: 'var(--ok-bg)', border: '1px solid var(--ok)', color: 'var(--ok)' }}>
+          <CheckCircle size={14} />
+          <span>제출 완료 — 읽기 전용 모드입니다.</span>
+        </div>
+      )}
+
+      {/* 그리드 카드 */}
+      {!isLoading && (
+        <div
+          className="bg-white rounded-lg border border-[var(--gray-border)] overflow-hidden"
+          style={{ maxHeight: 'calc(100vh - 220px)' }}
+        >
+          {renderGridPanel(false)}
         </div>
       )}
     </div>

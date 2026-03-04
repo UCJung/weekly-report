@@ -352,115 +352,113 @@ export default function ProjectAllocation() {
   }
 
   return (
-    <div className="flex flex-col h-full" style={{ backgroundColor: 'var(--gray-light)' }}>
-      {/* 헤더 */}
+    <div>
+      {/* 툴바 카드 */}
       <div
-        className="flex items-center justify-between px-6 py-3 flex-shrink-0"
-        style={{ backgroundColor: 'white', borderBottom: '1px solid var(--gray-border)' }}
+        className="bg-white rounded-lg border border-[var(--gray-border)] flex items-center gap-3 mb-4"
+        style={{ padding: '10px 16px' }}
       >
-        <div className="flex items-center gap-4">
-          <h1 className="text-[16px] font-semibold" style={{ color: 'var(--text)' }}>
-            프로젝트 투입현황
-          </h1>
+        <h1 className="text-[16px] font-semibold" style={{ color: 'var(--text)' }}>
+          프로젝트 투입현황
+        </h1>
+        <div className="w-px h-5 bg-[var(--gray-border)]" />
 
-          {/* 프로젝트 선택 */}
-          <select
-            value={selectedProjectId ?? ''}
-            onChange={(e) => setSelectedProjectId(e.target.value || null)}
-            className="rounded px-2 py-1.5 text-[13px] border"
-            style={{
-              borderColor: 'var(--gray-border)',
-              color: 'var(--text)',
-              backgroundColor: 'white',
-            }}
-          >
-            {activeProjects.map((p) => (
-              <option key={p.id} value={p.id}>
-                [{p.code}] {p.name}
-              </option>
-            ))}
-          </select>
+        {/* 프로젝트 선택 */}
+        <select
+          value={selectedProjectId ?? ''}
+          onChange={(e) => setSelectedProjectId(e.target.value || null)}
+          className="rounded px-2 py-1.5 text-[13px] border"
+          style={{
+            borderColor: 'var(--gray-border)',
+            color: 'var(--text)',
+            backgroundColor: 'white',
+          }}
+        >
+          {activeProjects.map((p) => (
+            <option key={p.id} value={p.id}>
+              [{p.code}] {p.name}
+            </option>
+          ))}
+        </select>
 
-          {/* 탭 */}
-          <div
-            className="flex rounded-lg overflow-hidden"
-            style={{ border: '1px solid var(--gray-border)' }}
-          >
-            {(['monthly', 'yearly'] as TabType[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className="px-3 py-1.5 text-[12px] font-medium transition-colors"
-                style={{
-                  backgroundColor: tab === t ? 'var(--primary)' : 'white',
-                  color: tab === t ? 'white' : 'var(--text-sub)',
-                }}
-              >
-                {t === 'monthly' ? '월간' : '연간'}
-              </button>
-            ))}
-          </div>
-
-          {/* 월/연도 탐색 */}
-          {tab === 'monthly' ? (
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setYearMonth(getPreviousYearMonth(yearMonth))}
-                className="p-1 rounded hover:bg-gray-100 transition-colors"
-                style={{ color: 'var(--text-sub)' }}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span className="text-[14px] font-medium min-w-[96px] text-center" style={{ color: 'var(--text)' }}>
-                {formatYearMonth(yearMonth)}
-              </span>
-              <button
-                onClick={() => setYearMonth(getNextYearMonth(yearMonth))}
-                className="p-1 rounded hover:bg-gray-100 transition-colors"
-                style={{ color: 'var(--text-sub)' }}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => {
-                  const y = parseInt(currentYear, 10) - 1;
-                  setYearMonth(`${y}-${yearMonth.split('-')[1]}`);
-                }}
-                className="p-1 rounded hover:bg-gray-100 transition-colors"
-                style={{ color: 'var(--text-sub)' }}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span className="text-[14px] font-medium min-w-[60px] text-center" style={{ color: 'var(--text)' }}>
-                {currentYear}년
-              </span>
-              <button
-                onClick={() => {
-                  const y = parseInt(currentYear, 10) + 1;
-                  setYearMonth(`${y}-${yearMonth.split('-')[1]}`);
-                }}
-                className="p-1 rounded hover:bg-gray-100 transition-colors"
-                style={{ color: 'var(--text-sub)' }}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          )}
+        {/* 탭 */}
+        <div
+          className="flex rounded-lg overflow-hidden"
+          style={{ border: '1px solid var(--gray-border)' }}
+        >
+          {(['monthly', 'yearly'] as TabType[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className="px-3 py-1.5 text-[12px] font-medium transition-colors"
+              style={{
+                backgroundColor: tab === t ? 'var(--primary)' : 'white',
+                color: tab === t ? 'white' : 'var(--text-sub)',
+              }}
+            >
+              {t === 'monthly' ? '월간' : '연간'}
+            </button>
+          ))}
         </div>
-      </div>
 
-      <div className="flex-1 overflow-auto px-6 py-4">
-        {selectedProjectId && (
-          tab === 'monthly' ? (
-            <MonthlyView projectId={selectedProjectId} yearMonth={yearMonth} />
-          ) : (
-            <YearlyView projectId={selectedProjectId} year={currentYear} />
-          )
+        {/* 월/연도 탐색 */}
+        {tab === 'monthly' ? (
+          <>
+            <button
+              onClick={() => setYearMonth(getPreviousYearMonth(yearMonth))}
+              className="p-1 rounded hover:bg-gray-100 transition-colors"
+              style={{ color: 'var(--text-sub)' }}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-[14px] font-medium min-w-[96px] text-center" style={{ color: 'var(--text)' }}>
+              {formatYearMonth(yearMonth)}
+            </span>
+            <button
+              onClick={() => setYearMonth(getNextYearMonth(yearMonth))}
+              className="p-1 rounded hover:bg-gray-100 transition-colors"
+              style={{ color: 'var(--text-sub)' }}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => {
+                const y = parseInt(currentYear, 10) - 1;
+                setYearMonth(`${y}-${yearMonth.split('-')[1]}`);
+              }}
+              className="p-1 rounded hover:bg-gray-100 transition-colors"
+              style={{ color: 'var(--text-sub)' }}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-[14px] font-medium min-w-[60px] text-center" style={{ color: 'var(--text)' }}>
+              {currentYear}년
+            </span>
+            <button
+              onClick={() => {
+                const y = parseInt(currentYear, 10) + 1;
+                setYearMonth(`${y}-${yearMonth.split('-')[1]}`);
+              }}
+              className="p-1 rounded hover:bg-gray-100 transition-colors"
+              style={{ color: 'var(--text-sub)' }}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </>
         )}
       </div>
+
+      {/* 컨텐츠 */}
+      {selectedProjectId && (
+        tab === 'monthly' ? (
+          <MonthlyView projectId={selectedProjectId} yearMonth={yearMonth} />
+        ) : (
+          <YearlyView projectId={selectedProjectId} year={currentYear} />
+        )
+      )}
     </div>
   );
 }

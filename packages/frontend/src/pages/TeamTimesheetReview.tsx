@@ -143,43 +143,40 @@ export default function TeamTimesheetReview() {
   }
 
   return (
-    <div className="flex flex-col h-full" style={{ backgroundColor: 'var(--gray-light)' }}>
-      {/* 헤더 */}
+    <div>
+      {/* 툴바 카드 */}
       <div
-        className="flex items-center justify-between px-6 py-3 flex-shrink-0"
-        style={{ backgroundColor: 'white', borderBottom: '1px solid var(--gray-border)' }}
+        className="bg-white rounded-lg border border-[var(--gray-border)] flex items-center gap-3 mb-4"
+        style={{ padding: '10px 16px' }}
       >
-        <div className="flex items-center gap-4">
-          <h1 className="text-[16px] font-semibold" style={{ color: 'var(--text)' }}>
-            시간표 취합/승인
-          </h1>
-          {/* 월 탐색 */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setYearMonth(getPreviousYearMonth(yearMonth))}
-              className="p-1 rounded hover:bg-gray-100 transition-colors"
-              style={{ color: 'var(--text-sub)' }}
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span
-              className="text-[14px] font-medium min-w-[96px] text-center"
-              style={{ color: 'var(--text)' }}
-            >
-              {formatYearMonth(yearMonth)}
-            </span>
-            <button
-              onClick={() => setYearMonth(getNextYearMonth(yearMonth))}
-              className="p-1 rounded hover:bg-gray-100 transition-colors"
-              style={{ color: 'var(--text-sub)' }}
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
+        <h1 className="text-[16px] font-semibold" style={{ color: 'var(--text)' }}>
+          시간표 취합/승인
+        </h1>
+        <div className="w-px h-5 bg-[var(--gray-border)]" />
+        {/* 월 탐색 */}
+        <button
+          onClick={() => setYearMonth(getPreviousYearMonth(yearMonth))}
+          className="p-1 rounded hover:bg-gray-100 transition-colors"
+          style={{ color: 'var(--text-sub)' }}
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <span
+          className="text-[14px] font-medium min-w-[96px] text-center"
+          style={{ color: 'var(--text)' }}
+        >
+          {formatYearMonth(yearMonth)}
+        </span>
+        <button
+          onClick={() => setYearMonth(getNextYearMonth(yearMonth))}
+          className="p-1 rounded hover:bg-gray-100 transition-colors"
+          style={{ color: 'var(--text-sub)' }}
+        >
+          <ChevronRight size={16} />
+        </button>
       </div>
 
-      <div className="flex-1 overflow-auto px-6 py-4 flex flex-col gap-5">
+      <div className="flex flex-col gap-4">
         {/* 팀원 제출현황 */}
         <div
           className="rounded-lg overflow-hidden"
