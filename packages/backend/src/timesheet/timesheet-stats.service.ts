@@ -470,7 +470,46 @@ export class TimesheetStatsService {
       adminApproved: overview.reduce((sum, t) => sum + t.adminApproved, 0),
     };
 
-    return { yearMonth, teams: overview, grandTotal };
+    // 프로젝트 승인 현황: 해당 월에 투입 기록이 있는 활성 프로젝트 + PM 승인 여부
+    const activeProjects = await this.prisma.project.findMany({
+      where: { status: 'ACTIVE', managerId: { not: null } },
+      select: { id: true, managerId: true },
+    });
+
+    // 해당 월 timesheet에서 workLog가 있는 프로젝트만 필터
+    const projectsWithEntries = await this.prisma.timesheetWorkLog.findMany({
+      where: {
+        entry: { timesheet: { yearMonth } },
+      },
+      select: { projectId: true },
+      distinct: ['projectId'],
+    });
+    const projectIdsWithEntries = new Set(projectsWithEntries.map((w) => w.projectId));
+    const relevantProjects = activeProjects.filter((p) => projectIdsWithEntries.has(p.id));
+
+    // PM 승인 완료 프로젝트 수 (해당 프로젝트 매니저가 PROJECT_MANAGER 승인을 한 경우)
+    let approvedProjects = 0;
+    for (const project of relevantProjects) {
+      const approvalExists = await this.prisma.timesheetApproval.findFirst({
+        where: {
+          approvalType: ApprovalType.PROJECT_MANAGER,
+          approverId: project.managerId!,
+          timesheet: {
+            yearMonth,
+            entries: { some: { workLogs: { some: { projectId: project.id } } } },
+          },
+        },
+      });
+      if (approvalExists) approvedProjects++;
+    }
+
+    return {
+      yearMonth,
+      teams: overview,
+      grandTotal,
+      totalProjects: relevantProjects.length,
+      approvedProjects,
+    };
   }
 
   /** M+5 자동승인: yearMonth 종료 후 5일 경과 시 미승인 시간표 자동 승인 */

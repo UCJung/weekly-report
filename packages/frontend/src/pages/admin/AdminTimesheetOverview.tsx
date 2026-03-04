@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Download, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, ShieldCheck, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   formatYearMonth,
@@ -9,7 +9,6 @@ import {
 } from '@uc-teamspace/shared/constants/timesheet-utils';
 import { useAdminTimesheetOverview, useAdminApprove } from '../../hooks/useTimesheet';
 import { timesheetApi } from '../../api/timesheet.api';
-import Badge from '../../components/ui/Badge';
 
 export default function AdminTimesheetOverview() {
   const [yearMonth, setYearMonth] = useState<string>(getCurrentYearMonth);
@@ -20,11 +19,19 @@ export default function AdminTimesheetOverview() {
 
   const teams = data?.teams ?? [];
   const grandTotal = data?.grandTotal;
+  const totalProjects = data?.totalProjects ?? 0;
+  const approvedProjects = data?.approvedProjects ?? 0;
+
+  // 팀장 승인 완료 팀 수: 전체 인원 중 팀장 승인 인원 == 전체 인원 (인원 0인 팀 제외)
+  const leaderApprovedTeams = teams.filter(
+    (t) => t.totalMembers > 0 && t.leaderApproved === t.totalMembers,
+  ).length;
+  const totalTeamsWithMembers = teams.filter((t) => t.totalMembers > 0).length;
 
   // 최종 승인 가능 여부: 모든 팀에서 팀장 승인 완료된 경우
   const canFinalApprove =
     teams.length > 0 &&
-    teams.every((t) => t.totalMembers === 0 || t.leaderApproved === t.submitted);
+    teams.every((t) => t.totalMembers === 0 || t.leaderApproved === t.totalMembers);
 
   const handleAdminApprove = () => {
     adminApproveMutation.mutate(undefined, {
@@ -125,16 +132,16 @@ export default function AdminTimesheetOverview() {
         </div>
       )}
 
-      {/* 팀별 요약 카드 */}
+      {/* 요약 카드 + 테이블 */}
       {!isLoading && grandTotal && (
         <>
-          {/* 전체 요약 카드 행 */}
+          {/* 요약 카드 행 */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: '전체 팀원', value: grandTotal.totalMembers, unit: '명', color: 'var(--text)' },
-              { label: '제출완료', value: grandTotal.submitted, unit: '명', color: 'var(--warn)' },
-              { label: '팀장 승인', value: grandTotal.leaderApproved, unit: '명', color: 'var(--ok)' },
-              { label: '최종 승인', value: grandTotal.adminApproved, unit: '명', color: 'var(--primary)' },
+              { label: '전체 팀', value: totalTeamsWithMembers, unit: '팀', color: 'var(--text)' },
+              { label: '팀장 승인 완료', value: leaderApprovedTeams, unit: '팀', color: 'var(--ok)' },
+              { label: '전체 프로젝트', value: totalProjects, unit: '건', color: 'var(--text)' },
+              { label: 'PM 승인 완료', value: approvedProjects, unit: '건', color: 'var(--primary)' },
             ].map((card) => (
               <div
                 key={card.label}
@@ -152,7 +159,7 @@ export default function AdminTimesheetOverview() {
             ))}
           </div>
 
-          {/* 팀별 현황 테이블 */}
+          {/* 팀별 제출/승인 현황 테이블 */}
           <div
             className="rounded-lg overflow-hidden"
             style={{ backgroundColor: 'white', border: '1px solid var(--gray-border)' }}
@@ -172,7 +179,7 @@ export default function AdminTimesheetOverview() {
               <table className="w-full border-collapse text-[12px]">
                 <thead>
                   <tr style={{ backgroundColor: 'var(--tbl-header)' }}>
-                    {['팀 이름', '전체', '미작성', '작성중', '제출', '팀장승인', '최종승인', '진행률'].map((h) => (
+                    {['팀 이름', '전체 인원', '팀장 승인', '승인 상태'].map((h) => (
                       <th
                         key={h}
                         className="px-3 py-2 text-left font-semibold"
@@ -185,12 +192,8 @@ export default function AdminTimesheetOverview() {
                 </thead>
                 <tbody>
                   {teams.map((team, idx) => {
-                    const progress =
-                      team.totalMembers > 0
-                        ? Math.round((team.adminApproved / team.totalMembers) * 100)
-                        : 0;
-                    const allLeaderApproved =
-                      team.totalMembers > 0 && team.leaderApproved === team.submitted;
+                    const isComplete =
+                      team.totalMembers > 0 && team.leaderApproved === team.totalMembers;
 
                     return (
                       <tr
@@ -206,100 +209,32 @@ export default function AdminTimesheetOverview() {
                         <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
                           {team.totalMembers}명
                         </td>
-                        <td className="px-3 py-2">
-                          {team.notStarted > 0 ? (
-                            <Badge variant="gray">{team.notStarted}명</Badge>
-                          ) : (
-                            <span style={{ color: 'var(--text-sub)' }}>—</span>
-                          )}
+                        <td className="px-3 py-2 font-semibold" style={{ color: 'var(--text)' }}>
+                          {team.leaderApproved}/{team.totalMembers}
                         </td>
                         <td className="px-3 py-2">
-                          {team.draft > 0 ? (
-                            <Badge variant="warn">{team.draft}명</Badge>
-                          ) : (
+                          {team.totalMembers === 0 ? (
                             <span style={{ color: 'var(--text-sub)' }}>—</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2">
-                          {team.submitted > 0 ? (
-                            <Badge variant="warn">{team.submitted}명</Badge>
-                          ) : (
-                            <span style={{ color: 'var(--text-sub)' }}>—</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2">
-                          {team.leaderApproved > 0 ? (
-                            <div className="flex items-center gap-1">
-                              <Badge variant={allLeaderApproved ? 'ok' : 'warn'}>
-                                {team.leaderApproved}명
-                              </Badge>
-                            </div>
-                          ) : (
-                            <span style={{ color: 'var(--text-sub)' }}>—</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2">
-                          {team.adminApproved > 0 ? (
-                            <Badge variant="ok">{team.adminApproved}명</Badge>
-                          ) : (
-                            <span style={{ color: 'var(--text-sub)' }}>—</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="flex-1 rounded-full overflow-hidden"
-                              style={{ backgroundColor: 'var(--primary-bg)', height: '6px', minWidth: '60px' }}
+                          ) : isComplete ? (
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium"
+                              style={{ backgroundColor: 'var(--ok-bg)', color: 'var(--ok)' }}
                             >
-                              <div
-                                className="h-full rounded-full transition-all"
-                                style={{
-                                  width: `${progress}%`,
-                                  backgroundColor: progress === 100 ? 'var(--ok)' : 'var(--primary)',
-                                }}
-                              />
-                            </div>
-                            <span className="text-[11px] font-medium" style={{ color: 'var(--text)' }}>
-                              {progress}%
+                              <CheckCircle size={11} />
+                              완료
                             </span>
-                          </div>
+                          ) : (
+                            <span
+                              className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium"
+                              style={{ backgroundColor: 'var(--warn-bg)', color: 'var(--warn)' }}
+                            >
+                              진행중
+                            </span>
+                          )}
                         </td>
                       </tr>
                     );
                   })}
-
-                  {/* 합계 행 */}
-                  <tr
-                    style={{
-                      backgroundColor: 'var(--tbl-header)',
-                      borderTop: '2px solid var(--gray-border)',
-                    }}
-                  >
-                    <td className="px-3 py-2 font-bold" style={{ color: 'var(--text)' }}>합계</td>
-                    <td className="px-3 py-2 font-semibold" style={{ color: 'var(--text)' }}>
-                      {grandTotal.totalMembers}명
-                    </td>
-                    <td className="px-3 py-2 font-semibold" style={{ color: 'var(--text-sub)' }}>
-                      {grandTotal.notStarted}명
-                    </td>
-                    <td className="px-3 py-2 font-semibold" style={{ color: 'var(--text-sub)' }}>
-                      {grandTotal.draft}명
-                    </td>
-                    <td className="px-3 py-2 font-semibold" style={{ color: 'var(--text-sub)' }}>
-                      {grandTotal.submitted}명
-                    </td>
-                    <td className="px-3 py-2 font-semibold" style={{ color: 'var(--ok)' }}>
-                      {grandTotal.leaderApproved}명
-                    </td>
-                    <td className="px-3 py-2 font-semibold" style={{ color: 'var(--primary)' }}>
-                      {grandTotal.adminApproved}명
-                    </td>
-                    <td className="px-3 py-2 font-semibold" style={{ color: 'var(--text)' }}>
-                      {grandTotal.totalMembers > 0
-                        ? `${Math.round((grandTotal.adminApproved / grandTotal.totalMembers) * 100)}%`
-                        : '—'}
-                    </td>
-                  </tr>
                 </tbody>
               </table>
             )}
@@ -316,7 +251,7 @@ export default function AdminTimesheetOverview() {
               }}
             >
               최종 승인을 하려면 모든 팀의 팀장 승인이 완료되어야 합니다.
-              현재 팀장 승인 완료: {grandTotal.leaderApproved}명 / 제출 {grandTotal.submitted}명
+              현재 팀장 승인 완료: {leaderApprovedTeams}팀 / {totalTeamsWithMembers}팀
             </div>
           )}
         </>

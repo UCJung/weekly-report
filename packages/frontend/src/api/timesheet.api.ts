@@ -140,6 +140,8 @@ export interface AdminOverviewData {
   yearMonth: string;
   teams: AdminTeamOverviewRow[];
   grandTotal: AdminGrandTotal;
+  totalProjects: number;
+  approvedProjects: number;
 }
 
 export const timesheetApi = {
