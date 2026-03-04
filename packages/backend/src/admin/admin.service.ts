@@ -12,6 +12,7 @@ import { CreateGlobalProjectDto } from './dto/create-global-project.dto';
 import { UpdateGlobalProjectDto } from './dto/update-global-project.dto';
 import { ListGlobalProjectsDto } from './dto/list-global-projects.dto';
 import { ApproveProjectDto } from './dto/approve-project.dto';
+import { UpdateAccountInfoDto } from './dto/update-account-info.dto';
 import { parsePagination, buildPaginationResponse } from '../common/utils/pagination.util';
 
 @Injectable()
@@ -53,6 +54,8 @@ export class AdminService {
           accountStatus: true,
           mustChangePassword: true,
           isActive: true,
+          position: true,
+          jobTitle: true,
           createdAt: true,
           updatedAt: true,
           teamMemberships: {
@@ -138,6 +141,38 @@ export class AdminService {
     }
 
     return updated;
+  }
+
+  async updateAccountInfo(id: string, dto: UpdateAccountInfoDto) {
+    const member = await this.prisma.member.findUnique({ where: { id } });
+    if (!member) {
+      throw new BusinessException(
+        'MEMBER_NOT_FOUND',
+        '계정을 찾을 수 없습니다.',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return this.prisma.member.update({
+      where: { id },
+      data: {
+        ...(dto.position !== undefined && { position: dto.position }),
+        ...(dto.jobTitle !== undefined && { jobTitle: dto.jobTitle }),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        roles: true,
+        accountStatus: true,
+        mustChangePassword: true,
+        isActive: true,
+        position: true,
+        jobTitle: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
   async resetPassword(id: string) {
