@@ -460,8 +460,8 @@ export default function ProjectAllocation() {
                     <span
                       className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium"
                       style={{
-                        backgroundColor: p.pmApprovalStatus === 'APPROVED' ? 'var(--ok-bg)' : 'var(--warn-bg)',
-                        color: p.pmApprovalStatus === 'APPROVED' ? 'var(--ok)' : 'var(--warn)',
+                        backgroundColor: p.pmApprovalStatus === 'APPROVED' ? 'var(--primary-bg)' : 'var(--warn-bg)',
+                        color: p.pmApprovalStatus === 'APPROVED' ? 'var(--primary)' : 'var(--warn)',
                       }}
                     >
                       {p.pmApprovalStatus === 'APPROVED' ? '승인완료' : '미승인'}
