@@ -190,6 +190,8 @@ export default function AdminLayout() {
         >
           <div className="flex flex-col justify-center">
             <h1 className="text-[15px] font-bold leading-tight" style={{ color: 'var(--text)' }}>
+              <span className="text-[13px] font-normal" style={{ color: 'var(--text-sub)' }}>시스템관리</span>
+              <span className="text-[12px] mx-1.5 font-normal" style={{ color: 'var(--text-sub)' }}>&gt;</span>
               {(ADMIN_PAGE_TITLES[location.pathname] ?? { title: '시스템 관리' }).title}
             </h1>
             <p className="text-[12px] leading-tight mt-0.5" style={{ color: 'var(--text-sub)' }}>

@@ -91,6 +91,8 @@ export default function Header() {
       {/* 좌측: 페이지 제목 + 서브타이틀 */}
       <div className="flex flex-col justify-center">
         <h1 className="text-[15px] font-bold leading-tight" style={{ color: 'var(--text)' }}>
+          <span className="text-[13px] font-normal" style={{ color: 'var(--text-sub)' }}>워크스페이스</span>
+          <span className="text-[12px] mx-1.5 font-normal" style={{ color: 'var(--text-sub)' }}>&gt;</span>
           {pageInfo.title}
         </h1>
         {pageInfo.subtitle && (
