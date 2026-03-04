@@ -14,6 +14,7 @@
 | WORK-18-TASK-07 | 프론트엔드 — 팀장/PM/관리자 페이지 | TASK-05, TASK-06 | Done | 7012c94 | |
 | WORK-18-TASK-08 | 기존 코드 수정 + 통합 빌드 검증 | TASK-06, TASK-07 | Done | 1e45362 | |
 | WORK-18-TASK-09 | 시간표 작성 화면 버그 수정 + 프로젝트 다중 선택 | TASK-06, TASK-08 | Done | f1f5cd4 | |
+| WORK-18-TASK-10 | 이전 일자 복사 + 횡스크롤 | TASK-09 | Done | — | |
 
 ## Log
 - [2026-03-04] WORK-18-TASK-01 완료: Prisma 스키마 변경 (Position enum, 4 신규 모델, Member/Project 필드 추가), 마이그레이션, 시드 업데이트

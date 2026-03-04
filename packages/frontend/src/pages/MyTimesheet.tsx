@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Trash2, AlertCircle, CheckCircle, CopyPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   getMonthDays,
@@ -268,6 +268,32 @@ export default function MyTimesheet() {
     });
   };
 
+  // ── 이전 일자 복사 ──
+  const handleCopyFromPrevDay = (dateStr: string) => {
+    if (isSubmitted) return;
+    const idx = monthDays.findIndex((d) => dateToString(d) === dateStr);
+    if (idx <= 0) return; // 1일이거나 못 찾으면 무시
+    const prevDateStr = dateToString(monthDays[idx - 1]);
+    const prevEntry = localEntries.get(prevDateStr);
+    if (!prevEntry) return;
+
+    setLocalEntries((prev) => {
+      const next = new Map(prev);
+      const curEntry = next.get(dateStr);
+      if (!curEntry) return prev;
+      const updated: LocalEntry = {
+        ...curEntry,
+        attendance: prevEntry.attendance,
+        workLogs: prevEntry.workLogs.map((wl) => ({ ...wl })),
+        dirty: true,
+      };
+      next.set(dateStr, updated);
+      scheduleAutoSave(dateStr, updated);
+      return next;
+    });
+    toast.success('이전 일자 내용을 복사했습니다.');
+  };
+
   // ── 프로젝트 추가 (다중) ──
   const handleAddProjects = (projectIds: string[]) => {
     setActiveProjectIds((prev) => {
@@ -477,44 +503,76 @@ export default function MyTimesheet() {
 
       {/* 그리드 */}
       {!isLoading && (
-        <div className="flex-1 overflow-auto px-6 py-4">
+        <div className="flex-1 overflow-hidden px-6 py-4">
           <div
-            className="rounded-lg overflow-hidden"
+            className="rounded-lg overflow-x-auto"
             style={{ border: '1px solid var(--gray-border)' }}
           >
-            <table className="w-full border-collapse text-[12px]" style={{ minWidth: '700px' }}>
+            <table className="w-full border-collapse text-[12px]" style={{ minWidth: '600px' }}>
               <thead>
                 <tr style={{ backgroundColor: 'var(--tbl-header)' }}>
+                  {/* 고정 열: 복사 */}
+                  {!isSubmitted && (
+                    <th
+                      className="px-1 py-2 font-semibold"
+                      style={{
+                        color: 'var(--text-sub)',
+                        borderBottom: '1px solid var(--gray-border)',
+                        width: '28px',
+                        position: 'sticky',
+                        left: 0,
+                        zIndex: 2,
+                        backgroundColor: 'var(--tbl-header)',
+                      }}
+                    />
+                  )}
+                  {/* 고정 열: 날짜 */}
                   <th
                     className="px-2 py-2 text-left font-semibold"
                     style={{
                       color: 'var(--text-sub)',
                       borderBottom: '1px solid var(--gray-border)',
-                      width: '52px',
+                      width: '46px',
+                      position: 'sticky',
+                      left: !isSubmitted ? 28 : 0,
+                      zIndex: 2,
+                      backgroundColor: 'var(--tbl-header)',
                     }}
                   >
                     날짜
                   </th>
+                  {/* 고정 열: 요일 */}
                   <th
                     className="px-2 py-2 text-left font-semibold"
                     style={{
                       color: 'var(--text-sub)',
                       borderBottom: '1px solid var(--gray-border)',
                       width: '32px',
+                      position: 'sticky',
+                      left: !isSubmitted ? 74 : 46,
+                      zIndex: 2,
+                      backgroundColor: 'var(--tbl-header)',
                     }}
                   >
                     요일
                   </th>
+                  {/* 고정 열: 근태 */}
                   <th
                     className="px-2 py-2 text-left font-semibold"
                     style={{
                       color: 'var(--text-sub)',
                       borderBottom: '1px solid var(--gray-border)',
                       width: '90px',
+                      position: 'sticky',
+                      left: !isSubmitted ? 106 : 78,
+                      zIndex: 2,
+                      backgroundColor: 'var(--tbl-header)',
+                      borderRight: '1px solid var(--gray-border)',
                     }}
                   >
                     근태
                   </th>
+                  {/* 스크롤 영역: 프로젝트 열 */}
                   {activeProjectIds.map((pid) => (
                     <th
                       key={pid}
@@ -542,12 +600,18 @@ export default function MyTimesheet() {
                       </div>
                     </th>
                   ))}
+                  {/* 고정 열: 합계 */}
                   <th
                     className="px-2 py-2 text-right font-semibold"
                     style={{
                       color: 'var(--text-sub)',
                       borderBottom: '1px solid var(--gray-border)',
                       width: '64px',
+                      position: 'sticky',
+                      right: 0,
+                      zIndex: 2,
+                      backgroundColor: 'var(--tbl-header)',
+                      borderLeft: '1px solid var(--gray-border)',
                     }}
                   >
                     합계
@@ -556,7 +620,7 @@ export default function MyTimesheet() {
               </thead>
 
               <tbody>
-                {monthDays.map((d) => {
+                {monthDays.map((d, dayIdx) => {
                   const dateStr = dateToString(d);
                   const entry = localEntries.get(dateStr);
                   if (!entry) return null;
@@ -566,21 +630,58 @@ export default function MyTimesheet() {
                   const total = getTotalHours(entry);
                   const required = getRequiredHours(entry.attendance);
                   const hoursColor = getHoursColor(total, required);
+                  const rowBg = weekend ? 'var(--row-alt)' : 'white';
 
                   return (
                     <tr
                       key={dateStr}
                       style={{
-                        backgroundColor: weekend
-                          ? 'var(--row-alt)'
-                          : 'white',
+                        backgroundColor: rowBg,
                         borderBottom: '1px solid var(--gray-border)',
                       }}
                     >
+                      {/* 복사 버튼 */}
+                      {!isSubmitted && (
+                        <td
+                          className="px-1 py-1 text-center"
+                          style={{
+                            position: 'sticky',
+                            left: 0,
+                            zIndex: 1,
+                            backgroundColor: rowBg,
+                          }}
+                        >
+                          {dayIdx > 0 && (
+                            <button
+                              onClick={() => handleCopyFromPrevDay(dateStr)}
+                              className="p-0.5 rounded transition-colors"
+                              style={{ color: 'var(--text-sub)' }}
+                              onMouseEnter={(e) => {
+                                (e.currentTarget as HTMLButtonElement).style.color = 'var(--primary)';
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--primary-bg)';
+                              }}
+                              onMouseLeave={(e) => {
+                                (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-sub)';
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                              }}
+                              title="이전 일자 복사"
+                            >
+                              <CopyPlus size={12} />
+                            </button>
+                          )}
+                        </td>
+                      )}
+
                       {/* 날짜 */}
                       <td
                         className="px-2 py-1.5 font-medium"
-                        style={{ color: 'var(--text)' }}
+                        style={{
+                          color: 'var(--text)',
+                          position: 'sticky',
+                          left: !isSubmitted ? 28 : 0,
+                          zIndex: 1,
+                          backgroundColor: rowBg,
+                        }}
                       >
                         {d.getUTCDate()}
                       </td>
@@ -595,13 +696,26 @@ export default function MyTimesheet() {
                               : dayOfWeek === 6
                                 ? 'var(--primary)'
                                 : 'var(--text-sub)',
+                          position: 'sticky',
+                          left: !isSubmitted ? 74 : 46,
+                          zIndex: 1,
+                          backgroundColor: rowBg,
                         }}
                       >
                         {DAY_NAMES[dayOfWeek]}
                       </td>
 
                       {/* 근태 */}
-                      <td className="px-1 py-1">
+                      <td
+                        className="px-1 py-1"
+                        style={{
+                          position: 'sticky',
+                          left: !isSubmitted ? 106 : 78,
+                          zIndex: 1,
+                          backgroundColor: rowBg,
+                          borderRight: '1px solid var(--gray-border)',
+                        }}
+                      >
                         {isSubmitted ? (
                           <span style={{ color: 'var(--text)' }}>
                             {ATTENDANCE_LABEL[entry.attendance]}
@@ -707,7 +821,14 @@ export default function MyTimesheet() {
                       {/* 합계 */}
                       <td
                         className="px-2 py-1.5 text-right font-medium"
-                        style={{ color: hoursColor }}
+                        style={{
+                          color: hoursColor,
+                          position: 'sticky',
+                          right: 0,
+                          zIndex: 1,
+                          backgroundColor: rowBg,
+                          borderLeft: '1px solid var(--gray-border)',
+                        }}
                       >
                         {required > 0 ? (
                           <>
@@ -731,10 +852,27 @@ export default function MyTimesheet() {
                     borderTop: '2px solid var(--gray-border)',
                   }}
                 >
+                  {!isSubmitted && (
+                    <td
+                      style={{
+                        position: 'sticky',
+                        left: 0,
+                        zIndex: 1,
+                        backgroundColor: 'var(--tbl-header)',
+                      }}
+                    />
+                  )}
                   <td
                     colSpan={3}
                     className="px-2 py-2 font-semibold text-[12px]"
-                    style={{ color: 'var(--text)' }}
+                    style={{
+                      color: 'var(--text)',
+                      position: 'sticky',
+                      left: !isSubmitted ? 28 : 0,
+                      zIndex: 1,
+                      backgroundColor: 'var(--tbl-header)',
+                      borderRight: '1px solid var(--gray-border)',
+                    }}
                   >
                     월간 합계
                   </td>
@@ -749,7 +887,14 @@ export default function MyTimesheet() {
                   ))}
                   <td
                     className="px-2 py-2 text-right font-semibold text-[12px]"
-                    style={{ color: 'var(--text)' }}
+                    style={{
+                      color: 'var(--text)',
+                      position: 'sticky',
+                      right: 0,
+                      zIndex: 1,
+                      backgroundColor: 'var(--tbl-header)',
+                      borderLeft: '1px solid var(--gray-border)',
+                    }}
                   >
                     {monthlyTotals.grandTotal}h
                   </td>
