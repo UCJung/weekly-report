@@ -173,8 +173,8 @@ export default function MyTimesheet() {
   useEffect(() => {
     if (!currentTeamId) return;
     if (isLoading) return;
-    if (timesheet !== undefined) return; // null도 아닌 경우는 이미 생성됨
-    // timesheet가 null이면 생성
+    if (timesheet) return; // 이미 존재
+    // timesheet가 null이면 생성 (undefined는 아직 로딩 전)
     if (timesheet === null) {
       createMutation.mutate(undefined, {
         onError: () => toast.error('시간표 생성에 실패했습니다.'),
@@ -268,13 +268,12 @@ export default function MyTimesheet() {
     });
   };
 
-  // ── 프로젝트 추가 ──
-  const handleAddProject = (projectId: string) => {
-    if (activeProjectIds.includes(projectId)) {
-      toast.warning('이미 추가된 프로젝트입니다.');
-      return;
-    }
-    setActiveProjectIds((prev) => [...prev, projectId]);
+  // ── 프로젝트 추가 (다중) ──
+  const handleAddProjects = (projectIds: string[]) => {
+    setActiveProjectIds((prev) => {
+      const merged = [...new Set([...prev, ...projectIds])];
+      return merged;
+    });
   };
 
   // ── 프로젝트 제거 ──
@@ -345,9 +344,7 @@ export default function MyTimesheet() {
     return map;
   }, [teamProjects]);
 
-  const availableToAdd = teamProjects.filter(
-    (p: { id: string }) => !activeProjectIds.includes(p.id),
-  );
+  const allProjects = teamProjects as { id: string; name: string; code: string }[];
 
   // ── 렌더링 ──
 
@@ -407,11 +404,13 @@ export default function MyTimesheet() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* 프로젝트 추가 드롭다운 */}
-          {!isSubmitted && availableToAdd.length > 0 && (
-            <ProjectAddDropdown
-              projects={availableToAdd}
-              onAdd={handleAddProject}
+          {/* 프로젝트 다중 선택 드롭다운 */}
+          {!isSubmitted && allProjects.length > 0 && (
+            <ProjectMultiSelectDropdown
+              projects={allProjects}
+              selectedIds={activeProjectIds}
+              onAdd={handleAddProjects}
+              onRemove={handleRemoveProject}
             />
           )}
 
@@ -764,14 +763,21 @@ export default function MyTimesheet() {
   );
 }
 
-// ───────── 프로젝트 추가 드롭다운 ─────────
+// ───────── 프로젝트 다중 선택 드롭다운 ─────────
 
-interface ProjectAddDropdownProps {
+interface ProjectMultiSelectDropdownProps {
   projects: { id: string; name: string; code: string }[];
-  onAdd: (projectId: string) => void;
+  selectedIds: string[];
+  onAdd: (projectIds: string[]) => void;
+  onRemove: (projectId: string) => void;
 }
 
-function ProjectAddDropdown({ projects, onAdd }: ProjectAddDropdownProps) {
+function ProjectMultiSelectDropdown({
+  projects,
+  selectedIds,
+  onAdd,
+  onRemove,
+}: ProjectMultiSelectDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -785,6 +791,31 @@ function ProjectAddDropdown({ projects, onAdd }: ProjectAddDropdownProps) {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
+  const allSelected = projects.length > 0 && projects.every((p) => selectedIds.includes(p.id));
+
+  const handleToggle = (projectId: string) => {
+    if (selectedIds.includes(projectId)) {
+      onRemove(projectId);
+    } else {
+      onAdd([projectId]);
+    }
+  };
+
+  const handleToggleAll = () => {
+    if (allSelected) {
+      // 전체 해제
+      projects.forEach((p) => {
+        if (selectedIds.includes(p.id)) onRemove(p.id);
+      });
+    } else {
+      // 전체 선택
+      const toAdd = projects.filter((p) => !selectedIds.includes(p.id)).map((p) => p.id);
+      if (toAdd.length > 0) onAdd(toAdd);
+    }
+  };
+
+  const selectedCount = projects.filter((p) => selectedIds.includes(p.id)).length;
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -797,7 +828,15 @@ function ProjectAddDropdown({ projects, onAdd }: ProjectAddDropdownProps) {
         }}
       >
         <Plus size={13} />
-        프로젝트 추가
+        프로젝트 선택
+        {selectedCount > 0 && (
+          <span
+            className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold text-white"
+            style={{ backgroundColor: 'var(--primary)' }}
+          >
+            {selectedCount}
+          </span>
+        )}
       </button>
 
       {open && (
@@ -806,31 +845,63 @@ function ProjectAddDropdown({ projects, onAdd }: ProjectAddDropdownProps) {
           style={{
             backgroundColor: 'white',
             border: '1px solid var(--gray-border)',
-            minWidth: '200px',
-            maxHeight: '240px',
+            minWidth: '260px',
+            maxHeight: '320px',
             overflowY: 'auto',
           }}
         >
-          {projects.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => {
-                onAdd(p.id);
-                setOpen(false);
-              }}
-              className="w-full text-left px-4 py-2 text-[12px] transition-colors"
-              style={{ color: 'var(--text)' }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                  'var(--primary-bg)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
-              }}
-            >
-              <span className="font-medium">[{p.code}]</span> {p.name}
-            </button>
-          ))}
+          {/* 전체 선택 */}
+          <label
+            className="flex items-center gap-2 px-4 py-2 text-[12px] font-semibold cursor-pointer transition-colors"
+            style={{
+              color: 'var(--text)',
+              borderBottom: '1px solid var(--gray-border)',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLLabelElement).style.backgroundColor = 'var(--primary-bg)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLLabelElement).style.backgroundColor = 'transparent';
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={handleToggleAll}
+              className="accent-[var(--primary)]"
+            />
+            전체 선택
+          </label>
+
+          {projects.map((p) => {
+            const checked = selectedIds.includes(p.id);
+            return (
+              <label
+                key={p.id}
+                className="flex items-center gap-2 px-4 py-2 text-[12px] cursor-pointer transition-colors"
+                style={{ color: 'var(--text)' }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLLabelElement).style.backgroundColor = 'var(--primary-bg)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLLabelElement).style.backgroundColor = checked
+                    ? 'rgba(107,92,231,0.06)'
+                    : 'transparent';
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => handleToggle(p.id)}
+                  className="accent-[var(--primary)]"
+                />
+                <span className="font-medium" style={{ color: 'var(--primary)' }}>
+                  [{p.code}]
+                </span>
+                <span className="truncate">{p.name}</span>
+              </label>
+            );
+          })}
         </div>
       )}
     </div>
