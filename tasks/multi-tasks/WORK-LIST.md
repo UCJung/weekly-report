@@ -1,6 +1,6 @@
 # WORK 목록 (Master List)
 
-> 최종 갱신: 2026-03-04
+> 최종 갱신: 2026-03-05
 > 갱신 시점: git push 시 진행중인 WORK를 완료로 갱신
 
 | WORK | 제목 | 상태 | 비고 |
@@ -26,4 +26,4 @@
 | WORK-19 | 근무시간표 기능 개선 (Require-07) | COMPLETED | |
 | WORK-20 | 코드 품질점검 및 리팩토링 (Require-08) | COMPLETED | |
 | WORK-21 | DB 쿼리 성능 최적화 | COMPLETED | |
-| WORK-22 | Member.partId 이중 관리 제거 - TeamMembership 기반 단일화 | IN_PROGRESS | |
+| WORK-22 | Member.partId 이중 관리 제거 - TeamMembership 기반 단일화 | COMPLETED | |
