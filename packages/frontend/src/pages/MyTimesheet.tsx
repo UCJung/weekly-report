@@ -440,8 +440,25 @@ export default function MyTimesheet() {
       const total = getTotalHours(entry);
       const required = getRequiredHours(entry.attendance);
       const hoursColor = getHoursColor(total, required);
-      const rowBg = weekend ? 'var(--row-alt)' : 'white';
       const isHoliday = entry.attendance === 'HOLIDAY';
+      const isLeave = entry.attendance === 'ANNUAL_LEAVE';
+      const noInput = isHoliday || isLeave; // 입력 불필요
+      // 행 배경색: 입력불필요(회색) > 검증통과(녹색) > 검증실패(붉은색) > 기본
+      const rowBg = noInput
+        ? '#F3F4F6'               // 연한 회색 (공휴일/연차)
+        : required > 0 && total === required
+          ? '#ECFDF5'             // 연한 녹색 (검증 통과)
+          : required > 0 && total > 0 && total !== required
+            ? '#FEF2F2'           // 연한 붉은색 (검증 실패)
+            : weekend ? 'var(--row-alt)' : 'white';
+      // 시간 입력된 셀 강조색
+      const cellFilledBg = noInput
+        ? '#F3F4F6'
+        : required > 0 && total === required
+          ? '#D1FAE5'             // 진한 녹색
+          : required > 0 && total > 0 && total !== required
+            ? '#FEE2E2'           // 진한 붉은색
+            : '#EDE9FF';          // 진한 보라 (기본 강조)
       const showCopy = !isSubmitted && !isHoliday && findPrevWorkDayEntry(dateStr) !== null;
 
       return (
@@ -464,9 +481,10 @@ export default function MyTimesheet() {
           {/* 프로젝트 컬럼 */}
           {activeProjectIds.map((pid) => {
             const wl = entry.workLogs.find((w) => w.projectId === pid);
-            const needsInput = entry.attendance !== 'ANNUAL_LEAVE' && entry.attendance !== 'HOLIDAY';
+            const needsInput = !noInput;
+            const hasFilled = (wl?.hours ?? 0) > 0;
             return (
-              <td key={pid} className="px-1 py-1">
+              <td key={pid} className="px-1 py-1" style={hasFilled && needsInput ? { backgroundColor: cellFilledBg } : undefined}>
                 {needsInput ? (
                   <div className="flex gap-1">
                     {isSubmitted ? (<span className="w-14 text-center" style={{ color: 'var(--text)' }}>{wl?.hours ?? 0}h</span>) : (
