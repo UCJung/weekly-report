@@ -17,9 +17,7 @@ const mockMember = {
   id: 'member-1',
   name: '홍길동',
   roles: ['MEMBER'],
-  partId: 'part-1',
   isActive: true,
-  part: { id: 'part-1', name: 'DX' },
 };
 
 const mockPrisma = {
@@ -137,8 +135,7 @@ describe('PartSummaryService', () => {
       }
     });
 
-    it('should only include members from TeamMembership (not by Member.partId)', async () => {
-      // member-2 belongs to part-1 via Member.partId but is NOT in TeamMembership for this part
+    it('should only include members from TeamMembership', async () => {
       // autoMerge should only pick up members in TeamMembership
       mockPrisma.partSummary.findUnique.mockResolvedValueOnce(mockPartSummary);
       mockPrisma.part.findUnique.mockResolvedValueOnce({ teamId: 'team-1' });
@@ -183,10 +180,10 @@ describe('PartSummaryService', () => {
       expect(result).toHaveLength(0);
     });
 
-    it('should only include members from TeamMembership (not by Member.partId)', async () => {
+    it('should only include members from TeamMembership', async () => {
       // Verify TeamMembership is used for filtering
       mockPrisma.part.findUnique.mockResolvedValueOnce({ id: 'part-1', name: 'DX', teamId: 'team-1' });
-      // Only member-1 in TeamMembership (member-2 has Member.partId = 'part-1' but is NOT in TeamMembership)
+      // Only member-1 in TeamMembership
       mockPrisma.teamMembership.findMany.mockResolvedValueOnce([{ memberId: 'member-1' }]);
       mockPrisma.member.findMany.mockResolvedValueOnce([
         { ...mockMember, weeklyReports: [] },
@@ -236,7 +233,7 @@ describe('PartSummaryService', () => {
       expect(result).toHaveLength(0);
     });
 
-    it('should only include members from TeamMembership (not by Member.partId)', async () => {
+    it('should only include members from TeamMembership', async () => {
       mockPrisma.part.findUnique.mockResolvedValueOnce({ teamId: 'team-1' });
       // Only member-1 in TeamMembership
       mockPrisma.teamMembership.findMany.mockResolvedValueOnce([{ memberId: 'member-1' }]);

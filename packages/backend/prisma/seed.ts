@@ -68,13 +68,12 @@ async function main() {
   for (const m of members) {
     const member = await prisma.member.upsert({
       where: { email: m.email },
-      update: { name: m.name, roles: { set: m.roles }, partId: m.partId, sortOrder: m.sortOrder, position: m.position, jobTitle: m.jobTitle },
+      update: { name: m.name, roles: { set: m.roles }, sortOrder: m.sortOrder, position: m.position, jobTitle: m.jobTitle },
       create: {
         name: m.name,
         email: m.email,
         password: hashedPassword,
         roles: m.roles,
-        partId: m.partId,
         sortOrder: m.sortOrder,
         accountStatus: 'ACTIVE',
         mustChangePassword: false,
