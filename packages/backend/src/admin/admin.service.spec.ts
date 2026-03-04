@@ -4,6 +4,15 @@ import { AccountStatus, TeamStatus, MemberRole } from '@prisma/client';
 import { AdminService } from './admin.service';
 import { BusinessException } from '../common/filters/business-exception';
 
+const mockConfigService = {
+  get: mock((key: string, defaultValue?: string) => {
+    const config: Record<string, string> = {
+      DEFAULT_PASSWORD: 'changeme!2026',
+    };
+    return config[key] ?? defaultValue ?? null;
+  }),
+};
+
 const mockPrisma = {
   member: {
     count: mock(() => Promise.resolve(0)),
@@ -41,7 +50,7 @@ describe('AdminService', () => {
   let service: AdminService;
 
   beforeEach(() => {
-    service = new AdminService(mockPrisma as never);
+    service = new AdminService(mockPrisma as never, mockConfigService as never);
     // Reset mocks
     mockPrisma.member.count.mockResolvedValue(0);
     mockPrisma.member.findUnique.mockResolvedValue(null);

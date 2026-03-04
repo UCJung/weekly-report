@@ -40,6 +40,10 @@ const mockPrisma = {
   },
   part: {
     findMany: mock(() => Promise.resolve([])),
+    findUnique: mock(() => Promise.resolve({ teamId: 'team-1' })),
+  },
+  teamMembership: {
+    findMany: mock(() => Promise.resolve([{ memberId: 'member-1' }])),
   },
   $transaction: mock((ops: Promise<unknown>[]) => Promise.all(ops)),
 };
@@ -55,6 +59,8 @@ describe('PartSummaryService', () => {
     mockPrisma.summaryWorkItem.deleteMany.mockReset();
     mockPrisma.member.findMany.mockReset();
     mockPrisma.weeklyReport.findMany.mockReset();
+    mockPrisma.part.findUnique.mockReset();
+    mockPrisma.teamMembership.findMany.mockReset();
   });
 
   describe('create', () => {
@@ -103,7 +109,8 @@ describe('PartSummaryService', () => {
       };
 
       mockPrisma.partSummary.findUnique.mockResolvedValueOnce(mockPartSummary);
-      mockPrisma.member.findMany.mockResolvedValueOnce([mockMember]);
+      mockPrisma.part.findUnique.mockResolvedValueOnce({ teamId: 'team-1' });
+      mockPrisma.teamMembership.findMany.mockResolvedValueOnce([{ memberId: 'member-1' }]);
       mockPrisma.weeklyReport.findMany.mockResolvedValueOnce([memberWithReport.weeklyReports[0]]);
       mockPrisma.summaryWorkItem.deleteMany.mockResolvedValueOnce({ count: 0 });
       mockPrisma.summaryWorkItem.create.mockResolvedValueOnce({
@@ -127,6 +134,27 @@ describe('PartSummaryService', () => {
         expect(e).toBeInstanceOf(BusinessException);
         expect((e as BusinessException).errorCode).toBe('PART_SUMMARY_NOT_FOUND');
       }
+    });
+
+    it('should only include members from TeamMembership (not by Member.partId)', async () => {
+      // member-2 belongs to part-1 via Member.partId but is NOT in TeamMembership for this part
+      // autoMerge should only pick up members in TeamMembership
+      mockPrisma.partSummary.findUnique.mockResolvedValueOnce(mockPartSummary);
+      mockPrisma.part.findUnique.mockResolvedValueOnce({ teamId: 'team-1' });
+      // Only member-1 in TeamMembership
+      mockPrisma.teamMembership.findMany.mockResolvedValueOnce([{ memberId: 'member-1' }]);
+      mockPrisma.weeklyReport.findMany.mockResolvedValueOnce([]);
+      mockPrisma.summaryWorkItem.deleteMany.mockResolvedValueOnce({ count: 0 });
+
+      const result = await service.autoMerge('summary-1');
+      // mergedCount should be 0 since no work items
+      expect(result.mergedCount).toBe(0);
+      // Verify teamMembership query was called with the correct partId
+      expect(mockPrisma.teamMembership.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ partId: 'part-1', teamId: 'team-1' }),
+        }),
+      );
     });
   });
 

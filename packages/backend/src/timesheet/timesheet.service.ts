@@ -4,7 +4,7 @@ import { BusinessException } from '../common/filters/business-exception';
 import { HttpStatus } from '@nestjs/common';
 import { CreateTimesheetDto } from './dto/create-timesheet.dto';
 import { getMonthDays, isWeekend, getRequiredHours } from '@uc-teamspace/shared';
-import { AttendanceType } from '@prisma/client';
+import { AttendanceType, TimesheetStatus } from '@prisma/client';
 
 const TIMESHEET_INCLUDE = {
   entries: {
@@ -87,7 +87,7 @@ export class TimesheetService {
     if (timesheet.memberId !== memberId) {
       throw new BusinessException('TIMESHEET_FORBIDDEN', '본인의 시간표만 제출할 수 있습니다.', HttpStatus.FORBIDDEN);
     }
-    if (timesheet.status !== 'DRAFT') {
+    if (timesheet.status !== TimesheetStatus.DRAFT) {
       throw new BusinessException('TIMESHEET_ALREADY_SUBMITTED', '이미 제출된 시간표입니다.');
     }
 
@@ -124,7 +124,7 @@ export class TimesheetService {
 
     const updated = await this.prisma.monthlyTimesheet.update({
       where: { id },
-      data: { status: 'SUBMITTED', submittedAt: new Date() },
+      data: { status: TimesheetStatus.SUBMITTED, submittedAt: new Date() },
       include: TIMESHEET_INCLUDE,
     });
 

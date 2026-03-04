@@ -84,12 +84,26 @@ export class PartSummaryService {
       );
     }
 
-    // 해당 파트 팀원들의 WeeklyReport 조회
-    const members = await this.prisma.member.findMany({
-      where: { partId: summary.partId!, isActive: true },
+    // 해당 파트 팀원들의 WeeklyReport 조회 (TeamMembership 기반)
+    const part = await this.prisma.part.findUnique({
+      where: { id: summary.partId! },
+      select: { teamId: true },
     });
 
-    const memberIds = members.map((m) => m.id);
+    if (!part) {
+      throw new BusinessException(
+        'PART_NOT_FOUND',
+        '파트를 찾을 수 없습니다.',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const memberships = await this.prisma.teamMembership.findMany({
+      where: { partId: summary.partId!, teamId: part.teamId },
+      select: { memberId: true },
+    });
+
+    const memberIds = memberships.map((ms) => ms.memberId);
 
     const reports = await this.prisma.weeklyReport.findMany({
       where: {

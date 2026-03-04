@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BusinessException } from '../common/filters/business-exception';
-import { ApprovalType, AttendanceType, TimesheetStatus } from '@prisma/client';
+import { ApprovalType, AttendanceType, ProjectStatus, TeamStatus, TimesheetStatus } from '@prisma/client';
 import { getRequiredHours } from '@uc-teamspace/shared';
 
 @Injectable()
@@ -192,7 +192,7 @@ export class TimesheetStatsService {
         memberId: ts.member.id,
         memberName: ts.member.name,
         position: ts.member.position,
-        jobTitle: (ts.member as any).jobTitle ?? null,
+        jobTitle: ts.member.jobTitle ?? null,
         partId: partInfo?.partId ?? null,
         partName: partInfo?.partName ?? null,
         timesheetId: ts.id,
@@ -352,7 +352,7 @@ export class TimesheetStatsService {
   async getProjectAllocationSummary(memberId: string, yearMonth: string) {
     // 해당 멤버가 매니저인 활성 프로젝트 조회
     const projects = await this.prisma.project.findMany({
-      where: { managerId: memberId, status: 'ACTIVE' },
+      where: { managerId: memberId, status: ProjectStatus.ACTIVE },
       select: { id: true, name: true, code: true },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
@@ -390,12 +390,12 @@ export class TimesheetStatsService {
           const approvalCount = await this.prisma.timesheetApproval.count({
             where: {
               timesheetId: { in: timesheetIds },
-              approvalType: 'PROJECT_MANAGER',
+              approvalType: ApprovalType.PROJECT_MANAGER,
               approverId: memberId,
             },
           });
           if (approvalCount > 0) {
-            pmApprovalStatus = 'APPROVED';
+            pmApprovalStatus = TimesheetStatus.APPROVED;
           }
         }
 
@@ -417,7 +417,7 @@ export class TimesheetStatsService {
   /** 관리자: 전체 현황 — 팀별 제출/승인 현황 요약 */
   async getAdminOverview(yearMonth: string) {
     const teams = await this.prisma.team.findMany({
-      where: { teamStatus: 'ACTIVE' },
+      where: { teamStatus: TeamStatus.ACTIVE },
       include: {
         teamMemberships: {
           include: {
@@ -472,7 +472,7 @@ export class TimesheetStatsService {
 
     // 프로젝트 승인 현황: 해당 월에 투입 기록이 있는 활성 프로젝트 + PM 승인 여부
     const activeProjects = await this.prisma.project.findMany({
-      where: { status: 'ACTIVE', managerId: { not: null } },
+      where: { status: ProjectStatus.ACTIVE, managerId: { not: null } },
       select: { id: true, managerId: true },
     });
 
