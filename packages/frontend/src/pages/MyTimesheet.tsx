@@ -537,76 +537,65 @@ export default function MyTimesheet() {
   const tableStyle: React.CSSProperties = { width: 'max-content', minWidth: '100%' };
   const tableClass = 'border-collapse text-[12px]';
 
-  // ── 그리드 패널 (일반/전체화면 공용) ──
-  const renderGridPanel = (isFull: boolean) => (
-    <div
-      className="flex flex-col"
-      style={{
-        ...(isFull ? { flex: 1, minHeight: 0, overflow: 'hidden', height: '100vh' } : { height: '100%' }),
-      }}
-    >
-      {/* 툴바 (전체화면 시 헤더 역할) */}
+  // ── 테이블 렌더링 (일반/전체화면 공용) ──
+  const renderTable = () => (
+    <div style={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
+      <table className={tableClass} style={tableStyle}>
+        <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>{renderHeadRow()}</thead>
+        <tbody>{renderBodyRows()}</tbody>
+        <tfoot style={{ position: 'sticky', bottom: 0, zIndex: 2 }}>{renderFootRow()}</tfoot>
+      </table>
+    </div>
+  );
+
+  // ── 전체화면 전용 패널 (툴바 + 알림 + 테이블) ──
+  const renderFullscreenPanel = () => (
+    <div className="flex flex-col" style={{ flex: 1, minHeight: 0, overflow: 'hidden', height: '100vh' }}>
+      {/* 전체화면 툴바 */}
       <div
         className="flex items-center justify-between px-4 py-2 flex-shrink-0"
-        style={{
-          backgroundColor: 'white',
-          borderBottom: '1px solid var(--gray-border)',
-        }}
+        style={{ backgroundColor: 'white', borderBottom: '1px solid var(--gray-border)' }}
       >
         <div className="flex items-center gap-3">
-          {isFull && (
-            <span className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
-              근무시간표 — {formatYearMonth(yearMonth)}
-            </span>
-          )}
-          {isFull && timesheet && (
+          <span className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
+            근무시간표 — {formatYearMonth(yearMonth)}
+          </span>
+          {timesheet && (
             <Badge variant={TIMESHEET_STATUS_VARIANT[timesheet.status] ?? 'gray'}>
               {TIMESHEET_STATUS_LABEL[timesheet.status] ?? timesheet.status}
             </Badge>
           )}
-          {!isFull && (
-            <span className="text-[12px]" style={{ color: 'var(--text-sub)' }}>
-              {activeProjectIds.length}개 프로젝트
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-2">
-          {isFull && !isSubmitted && allProjects.length > 0 && (
+          {!isSubmitted && allProjects.length > 0 && (
             <ProjectMultiSelectDropdown projects={allProjects} selectedIds={activeProjectIds} onAdd={handleAddProjects} onRemove={handleRemoveProject} />
           )}
-          {isFull && !isSubmitted && timesheet && (
+          {!isSubmitted && timesheet && (
             <button onClick={handleSubmit} disabled={submitMutation.isPending} className="flex items-center gap-1 px-3 py-1.5 rounded text-[13px] font-medium text-white transition-colors" style={{ backgroundColor: validationErrors.length > 0 ? 'var(--warn)' : 'var(--primary)' }}>
               {submitMutation.isPending ? '제출 중...' : '제출'}
             </button>
           )}
           <button
-            onClick={() => setFullscreen(!fullscreen)}
+            onClick={() => setFullscreen(false)}
             className="flex items-center gap-1 px-2 py-1.5 rounded text-[12px] border transition-colors"
             style={{ borderColor: 'var(--gray-border)', color: 'var(--text-sub)', backgroundColor: 'white' }}
-            title={isFull ? '전체화면 닫기' : '전체화면 작성'}
+            title="전체화면 닫기"
           >
-            {isFull ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-            <span>{isFull ? '닫기' : '전체화면'}</span>
+            <Minimize2 size={13} />
+            <span>닫기</span>
           </button>
         </div>
       </div>
 
-      {/* 검증 오류 (전체화면 시) */}
-      {isFull && validationErrors.length > 0 && !isSubmitted && (
+      {/* 전체화면 검증 오류 */}
+      {validationErrors.length > 0 && !isSubmitted && (
         <div className="mx-4 mt-2 px-3 py-1.5 rounded flex items-start gap-2 text-[11px] flex-shrink-0" style={{ backgroundColor: 'var(--warn-bg)', border: '1px solid var(--warn)', color: 'var(--warn)' }}>
           <AlertCircle size={12} className="flex-shrink-0 mt-0.5" />
           <span><span className="font-semibold">검증 {validationErrors.length}건</span> {validationErrors.slice(0, 3).join(' / ')}</span>
         </div>
       )}
 
-      {/* 테이블 영역: 단일 table + sticky thead/tfoot */}
-      <div className="flex-1 min-h-0" style={{ overflow: 'auto' }}>
-        <table className={tableClass} style={tableStyle}>
-          <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>{renderHeadRow()}</thead>
-          <tbody>{renderBodyRows()}</tbody>
-          <tfoot style={{ position: 'sticky', bottom: 0, zIndex: 2 }}>{renderFootRow()}</tfoot>
-        </table>
-      </div>
+      {renderTable()}
     </div>
   );
 
@@ -623,7 +612,7 @@ export default function MyTimesheet() {
           flexDirection: 'column',
         }}
       >
-        {renderGridPanel(true)}
+        {renderFullscreenPanel()}
       </div>
     );
   }
@@ -660,6 +649,9 @@ export default function MyTimesheet() {
           </>
         )}
         <div className="flex items-center gap-2 ml-auto">
+          <span className="text-[12px]" style={{ color: 'var(--text-sub)' }}>
+            {activeProjectIds.length}개 프로젝트
+          </span>
           {!isSubmitted && allProjects.length > 0 && (
             <ProjectMultiSelectDropdown projects={allProjects} selectedIds={activeProjectIds} onAdd={handleAddProjects} onRemove={handleRemoveProject} />
           )}
@@ -668,6 +660,15 @@ export default function MyTimesheet() {
               {submitMutation.isPending ? '제출 중...' : '제출'}
             </button>
           )}
+          <button
+            onClick={() => setFullscreen(true)}
+            className="flex items-center gap-1 px-2 py-1.5 rounded text-[12px] border transition-colors"
+            style={{ borderColor: 'var(--gray-border)', color: 'var(--text-sub)', backgroundColor: 'white' }}
+            title="전체화면 작성"
+          >
+            <Maximize2 size={13} />
+            <span>전체화면</span>
+          </button>
         </div>
       </div>
 
@@ -699,10 +700,10 @@ export default function MyTimesheet() {
       {/* 그리드 카드 */}
       {!isLoading && (
         <div
-          className="bg-white rounded-lg border border-[var(--gray-border)] overflow-hidden"
-          style={{ maxHeight: 'calc(100vh - 220px)' }}
+          className="bg-white rounded-lg border border-[var(--gray-border)] flex flex-col"
+          style={{ maxHeight: 'calc(100vh - 220px)', overflow: 'hidden' }}
         >
-          {renderGridPanel(false)}
+          {renderTable()}
         </div>
       )}
     </div>

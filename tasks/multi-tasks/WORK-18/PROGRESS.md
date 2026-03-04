@@ -23,6 +23,7 @@
 | WORK-18-TASK-16 | 공휴일/연차 제출 오류 수정 (workLogs 초기화) | TASK-15 | Done | — | |
 | WORK-18-TASK-17 | 관리자 프로젝트 목록 책임자 미표시 수정 | — | Done | — | |
 | WORK-18-TASK-18 | 시간표 화면 레이아웃 통일 (카드 패턴) | TASK-17 | Done | — | |
+| WORK-18-TASK-19 | 종스크롤 복원 + 그리드 내부 툴바 제거/통합 | TASK-18 | Done | — | |
 
 ## Log
 - [2026-03-04] WORK-18-TASK-01 완료: Prisma 스키마 변경 (Position enum, 4 신규 모델, Member/Project 필드 추가), 마이그레이션, 시드 업데이트
