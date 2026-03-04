@@ -8,7 +8,7 @@
 | WORK-21-TASK-01 | Prisma 스키마 인덱스 추가 + 마이그레이션 | - | Done | 5afad9b | |
 | WORK-21-TASK-02 | timesheet-stats.service.ts CRITICAL/HIGH 최적화 | TASK-01 | Done | c5af01e | |
 | WORK-21-TASK-03 | 주간업무/취합보고 쿼리 최적화 | TASK-01 | Done | a67c80f | |
-| WORK-21-TASK-04 | 시간표/Admin 서비스 쿼리 최적화 | TASK-01, TASK-02 | Done | | |
+| WORK-21-TASK-04 | 시간표/Admin 서비스 쿼리 최적화 | TASK-01, TASK-02 | Done | 60cb379 | |
 
 ## Log
 
