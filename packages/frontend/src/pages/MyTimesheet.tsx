@@ -396,13 +396,24 @@ export default function MyTimesheet() {
   }
 
 
+  // ── sticky 열 너비 / left 상수 ──
+  const COL_W = { date: 46, day: 36, att: 90, total: 60, copy: 32 };
+  const COL_LEFT = {
+    date: 0,
+    day: COL_W.date,
+    att: COL_W.date + COL_W.day,
+    total: COL_W.date + COL_W.day + COL_W.att,
+  };
+  const stickyBase: React.CSSProperties = { position: 'sticky', zIndex: 1 };
+  const stickyHeadFoot: React.CSSProperties = { position: 'sticky', zIndex: 3 }; // thead/tfoot: row-sticky + col-sticky
+
   // ── 테이블 헤더 행 ──
   const renderHeadRow = () => (
     <tr style={{ backgroundColor: 'var(--tbl-header)' }}>
-      <th className="px-2 py-2 text-left font-semibold" style={{ color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', width: '46px', minWidth: '46px' }}>날짜</th>
-      <th className="px-2 py-2 text-left font-semibold" style={{ color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', width: '36px', minWidth: '36px' }}>요일</th>
-      <th className="px-2 py-2 text-left font-semibold" style={{ color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', width: '90px', minWidth: '90px' }}>근태</th>
-      <th className="px-2 py-2 text-right font-semibold" style={{ color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', width: '60px', minWidth: '60px', borderRight: activeProjectIds.length > 0 ? '1px solid var(--gray-border)' : undefined }}>합계</th>
+      <th className="px-2 py-2 text-left font-semibold" style={{ ...stickyHeadFoot, left: COL_LEFT.date, color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', width: COL_W.date, minWidth: COL_W.date, backgroundColor: 'var(--tbl-header)' }}>날짜</th>
+      <th className="px-2 py-2 text-left font-semibold" style={{ ...stickyHeadFoot, left: COL_LEFT.day, color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', width: COL_W.day, minWidth: COL_W.day, backgroundColor: 'var(--tbl-header)' }}>요일</th>
+      <th className="px-2 py-2 text-left font-semibold" style={{ ...stickyHeadFoot, left: COL_LEFT.att, color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', width: COL_W.att, minWidth: COL_W.att, backgroundColor: 'var(--tbl-header)' }}>근태</th>
+      <th className="px-2 py-2 text-right font-semibold" style={{ ...stickyHeadFoot, left: COL_LEFT.total, color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', width: COL_W.total, minWidth: COL_W.total, backgroundColor: 'var(--tbl-header)', borderRight: activeProjectIds.length > 0 ? '2px solid var(--gray-border)' : undefined }}>합계</th>
       {activeProjectIds.map((pid) => (
         <th key={pid} className="px-2 py-2 font-semibold" style={{ color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', minWidth: '150px' }}>
           <div className="flex items-center justify-between gap-1">
@@ -413,7 +424,7 @@ export default function MyTimesheet() {
           </div>
         </th>
       ))}
-      {!isSubmitted && <th className="px-1 py-2" style={{ borderBottom: '1px solid var(--gray-border)', width: '32px', minWidth: '32px' }} />}
+      {!isSubmitted && <th className="px-1 py-2" style={{ borderBottom: '1px solid var(--gray-border)', width: COL_W.copy, minWidth: COL_W.copy }} />}
     </tr>
   );
 
@@ -435,9 +446,9 @@ export default function MyTimesheet() {
 
       return (
         <tr key={dateStr} style={{ backgroundColor: rowBg, borderBottom: '1px solid var(--gray-border)' }}>
-          <td className="px-2 py-1.5 font-medium" style={{ color: 'var(--text)' }}>{d.getUTCDate()}</td>
-          <td className="px-2 py-1.5" style={{ color: dayOfWeek === 0 ? 'var(--danger)' : dayOfWeek === 6 ? 'var(--primary)' : 'var(--text-sub)' }}>{DAY_NAMES[dayOfWeek]}</td>
-          <td className="px-1 py-1">
+          <td className="px-2 py-1.5 font-medium" style={{ ...stickyBase, left: COL_LEFT.date, backgroundColor: rowBg, color: 'var(--text)' }}>{d.getUTCDate()}</td>
+          <td className="px-2 py-1.5" style={{ ...stickyBase, left: COL_LEFT.day, backgroundColor: rowBg, color: dayOfWeek === 0 ? 'var(--danger)' : dayOfWeek === 6 ? 'var(--primary)' : 'var(--text-sub)' }}>{DAY_NAMES[dayOfWeek]}</td>
+          <td className="px-1 py-1" style={{ ...stickyBase, left: COL_LEFT.att, backgroundColor: rowBg }}>
             {isSubmitted ? (
               <span style={{ color: 'var(--text)' }}>{ATTENDANCE_LABEL[entry.attendance]}</span>
             ) : (
@@ -447,7 +458,7 @@ export default function MyTimesheet() {
             )}
           </td>
           {/* 합계 (근태 바로 우측) */}
-          <td className="px-2 py-1.5 text-right font-medium" style={{ color: hoursColor, borderRight: activeProjectIds.length > 0 ? '1px solid var(--gray-border)' : undefined }}>
+          <td className="px-2 py-1.5 text-right font-medium" style={{ ...stickyBase, left: COL_LEFT.total, backgroundColor: rowBg, color: hoursColor, borderRight: activeProjectIds.length > 0 ? '2px solid var(--gray-border)' : undefined }}>
             {required > 0 ? (<>{total}<span className="text-[10px] ml-0.5" style={{ color: 'var(--text-sub)' }}>/{required}h</span></>) : (<span style={{ color: 'var(--text-sub)' }}>—</span>)}
           </td>
           {/* 프로젝트 컬럼 */}
@@ -486,8 +497,10 @@ export default function MyTimesheet() {
   // ── 월간 합계 행 ──
   const renderFootRow = () => (
     <tr style={{ backgroundColor: 'var(--tbl-header)', borderTop: '2px solid var(--gray-border)' }}>
-      <td colSpan={3} className="px-2 py-2 font-semibold text-[12px]" style={{ color: 'var(--text)' }}>월간 합계</td>
-      <td className="px-2 py-2 text-right font-semibold text-[12px]" style={{ color: 'var(--text)', borderRight: activeProjectIds.length > 0 ? '1px solid var(--gray-border)' : undefined }}>{monthlyTotals.grandTotal}h</td>
+      <td className="px-2 py-2 font-semibold text-[12px]" style={{ ...stickyHeadFoot, left: COL_LEFT.date, backgroundColor: 'var(--tbl-header)', color: 'var(--text)' }}>월간</td>
+      <td className="px-2 py-2 font-semibold text-[12px]" style={{ ...stickyHeadFoot, left: COL_LEFT.day, backgroundColor: 'var(--tbl-header)', color: 'var(--text)' }}>합계</td>
+      <td className="px-2 py-2 text-[12px]" style={{ ...stickyHeadFoot, left: COL_LEFT.att, backgroundColor: 'var(--tbl-header)' }} />
+      <td className="px-2 py-2 text-right font-semibold text-[12px]" style={{ ...stickyHeadFoot, left: COL_LEFT.total, backgroundColor: 'var(--tbl-header)', color: 'var(--text)', borderRight: activeProjectIds.length > 0 ? '2px solid var(--gray-border)' : undefined }}>{monthlyTotals.grandTotal}h</td>
       {activeProjectIds.map((pid) => (
         <td key={pid} className="px-2 py-2 font-semibold text-[12px]" style={{ color: 'var(--primary)' }}>{monthlyTotals.projectTotals[pid] ?? 0}h</td>
       ))}
@@ -639,26 +652,6 @@ export default function MyTimesheet() {
         </div>
       </div>
 
-      {/* 검증 오류 */}
-      {validationErrors.length > 0 && !isSubmitted && (
-        <div className="mx-6 mt-3 px-4 py-2 rounded flex items-start gap-2 text-[12px]" style={{ backgroundColor: 'var(--warn-bg)', border: '1px solid var(--warn)', color: 'var(--warn)' }}>
-          <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
-          <div>
-            <span className="font-semibold">검증 오류 {validationErrors.length}건:</span>{' '}
-            {validationErrors.slice(0, 3).join(' / ')}
-            {validationErrors.length > 3 && ` 외 ${validationErrors.length - 3}건`}
-          </div>
-        </div>
-      )}
-
-      {/* 읽기 전용 배너 */}
-      {isSubmitted && (
-        <div className="mx-6 mt-3 px-4 py-2 rounded flex items-center gap-2 text-[12px]" style={{ backgroundColor: 'var(--ok-bg)', border: '1px solid var(--ok)', color: 'var(--ok)' }}>
-          <CheckCircle size={14} />
-          <span>제출 완료 — 읽기 전용 모드입니다.</span>
-        </div>
-      )}
-
       {/* 로딩 */}
       {isLoading && (
         <div className="flex items-center justify-center h-64">
@@ -666,9 +659,30 @@ export default function MyTimesheet() {
         </div>
       )}
 
-      {/* 그리드 */}
+      {/* 알림 + 그리드 (동일 너비 컨테이너) */}
       {!isLoading && (
-        <div className="flex-1 min-h-0 px-6 py-4 flex flex-col" style={{ overflow: 'hidden' }}>
+        <div className="flex-1 min-h-0 px-6 py-3 flex flex-col gap-2" style={{ overflow: 'hidden' }}>
+          {/* 검증 오류 */}
+          {validationErrors.length > 0 && !isSubmitted && (
+            <div className="px-4 py-2 rounded flex items-start gap-2 text-[12px] flex-shrink-0" style={{ backgroundColor: 'var(--warn-bg)', border: '1px solid var(--warn)', color: 'var(--warn)' }}>
+              <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+              <div>
+                <span className="font-semibold">검증 오류 {validationErrors.length}건:</span>{' '}
+                {validationErrors.slice(0, 3).join(' / ')}
+                {validationErrors.length > 3 && ` 외 ${validationErrors.length - 3}건`}
+              </div>
+            </div>
+          )}
+
+          {/* 읽기 전용 배너 */}
+          {isSubmitted && (
+            <div className="px-4 py-2 rounded flex items-center gap-2 text-[12px] flex-shrink-0" style={{ backgroundColor: 'var(--ok-bg)', border: '1px solid var(--ok)', color: 'var(--ok)' }}>
+              <CheckCircle size={14} />
+              <span>제출 완료 — 읽기 전용 모드입니다.</span>
+            </div>
+          )}
+
+          {/* 그리드 */}
           <div className="rounded-lg flex flex-col flex-1 min-h-0" style={{ border: '1px solid var(--gray-border)', overflow: 'hidden' }}>
             {renderGridPanel(false)}
           </div>

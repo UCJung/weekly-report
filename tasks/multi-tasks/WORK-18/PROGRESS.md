@@ -16,7 +16,8 @@
 | WORK-18-TASK-09 | 시간표 작성 화면 버그 수정 + 프로젝트 다중 선택 | TASK-06, TASK-08 | Done | f1f5cd4 | |
 | WORK-18-TASK-10 | 이전 일자 복사 + 횡스크롤 | TASK-09 | Done | 602bce2 | TASK-11에서 개선 |
 | WORK-18-TASK-11 | 복사 로직 개선(근무일 기준) + 레이아웃 정리 | TASK-10 | Done | 5cc2dba | |
-| WORK-18-TASK-12 | 전체화면 + 합계열 이동 + 고정헤더/푸터 + 열정렬 | TASK-11 | Done | 1eb515d | |
+| WORK-18-TASK-12 | 전체화면 + 합계열 이동 + 고정헤더/푸터 + 열정렬 | TASK-11 | Done | c6f52c2 | |
+| WORK-18-TASK-13 | 횡스크롤 고정열(sticky left) + 알림/목록 너비 통일 | TASK-12 | Done | — | |
 
 ## Log
 - [2026-03-04] WORK-18-TASK-01 완료: Prisma 스키마 변경 (Position enum, 4 신규 모델, Member/Project 필드 추가), 마이그레이션, 시드 업데이트
@@ -30,3 +31,4 @@
 - [2026-03-04] WORK-18-TASK-07 완료: 팀장/PM/관리자 프론트엔드 페이지 3개, API/Hook 확장, 사이드바 메뉴
 - [2026-03-04] WORK-18-TASK-08 완료: 기존 페이지 직위/직책/책임자 반영, 프로젝트 생성 요청/승인 UI, 통합 빌드 0 에러
 - [2026-03-04] WORK-18-TASK-12 완료: 전체화면 모드, 합계열 근태 우측 이동, sticky thead/tfoot 고정 헤더/푸터, 단일 table 열 정렬 통합
+- [2026-03-04] WORK-18-TASK-13 완료: 횡스크롤 시 날짜/요일/근태/합계 sticky left 고정, 검증오류/배너 너비를 헤더와 동일 컨테이너로 통일
