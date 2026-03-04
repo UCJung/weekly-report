@@ -1,21 +1,162 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, CheckCircle, XCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
 import {
   formatYearMonth,
   getCurrentYearMonth,
   getPreviousYearMonth,
   getNextYearMonth,
 } from '@uc-teamspace/shared/constants/timesheet-utils';
-import { TIMESHEET_STATUS_LABEL, TIMESHEET_STATUS_VARIANT, POSITION_LABEL } from '../constants/labels';
+import { TIMESHEET_STATUS_LABEL, TIMESHEET_STATUS_VARIANT, POSITION_LABEL, ATTENDANCE_LABEL } from '../constants/labels';
 import {
   useTeamMembersStatus,
   useTeamSummary,
   useApproveTimesheet,
   useRejectTimesheet,
+  useBatchApproveTimesheets,
 } from '../hooks/useTimesheet';
+import { timesheetApi, type TeamMemberStatusRow } from '../api/timesheet.api';
 import { useTeamStore } from '../stores/teamStore';
 import Badge from '../components/ui/Badge';
+
+// ──────────── 시간표 상세 팝업 ────────────
+
+interface TimesheetPopupProps {
+  timesheetId: string;
+  memberName: string;
+  onClose: () => void;
+}
+
+function TimesheetPopup({ timesheetId, memberName, onClose }: TimesheetPopupProps) {
+  const { data: ts, isLoading } = useQuery({
+    queryKey: ['timesheet-detail', timesheetId],
+    queryFn: () => timesheetApi.getTimesheetById(timesheetId).then((r) => r.data.data),
+    enabled: !!timesheetId,
+    staleTime: 30_000,
+  });
+
+  // ESC 키 핸들러
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  // 날짜 정렬
+  const sortedEntries = useMemo(() => {
+    if (!ts?.entries) return [];
+    return [...ts.entries].sort((a, b) => a.date.localeCompare(b.date));
+  }, [ts]);
+
+  const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl flex flex-col"
+        style={{ width: '95vw', height: '90vh', maxWidth: '1400px' }}
+      >
+        {/* 헤더 */}
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid var(--gray-border)' }}>
+          <h2 className="text-[16px] font-bold" style={{ color: 'var(--text)' }}>
+            {memberName}님의 근무시간표
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+            style={{ color: 'var(--text-sub)', border: '1px solid var(--gray-border)' }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* 콘텐츠 */}
+        <div className="flex-1 overflow-auto p-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full text-[13px]" style={{ color: 'var(--text-sub)' }}>
+              불러오는 중...
+            </div>
+          ) : !ts ? (
+            <div className="flex items-center justify-center h-full text-[13px]" style={{ color: 'var(--text-sub)' }}>
+              시간표 데이터가 없습니다.
+            </div>
+          ) : (
+            <table className="w-full border-collapse text-[12px]">
+              <thead>
+                <tr style={{ backgroundColor: 'var(--tbl-header)' }}>
+                  <th className="px-3 py-2 text-left font-semibold" style={{ color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', width: '100px' }}>
+                    날짜
+                  </th>
+                  <th className="px-3 py-2 text-left font-semibold" style={{ color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', width: '50px' }}>
+                    요일
+                  </th>
+                  <th className="px-3 py-2 text-left font-semibold" style={{ color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', width: '80px' }}>
+                    근태
+                  </th>
+                  <th className="px-3 py-2 text-left font-semibold" style={{ color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)' }}>
+                    프로젝트 / 시간
+                  </th>
+                  <th className="px-3 py-2 text-right font-semibold" style={{ color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', width: '80px' }}>
+                    합계
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedEntries.map((entry, idx) => {
+                  const d = new Date(entry.date);
+                  const dayOfWeek = d.getUTCDay();
+                  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                  const totalH = entry.workLogs.reduce((s, wl) => s + wl.hours, 0);
+
+                  return (
+                    <tr
+                      key={entry.id}
+                      style={{
+                        backgroundColor: isWeekend ? 'var(--row-alt)' : idx % 2 === 0 ? 'white' : 'var(--row-alt)',
+                        borderBottom: '1px solid var(--gray-border)',
+                      }}
+                    >
+                      <td className="px-3 py-2" style={{ color: 'var(--text)' }}>
+                        {entry.date.slice(0, 10)}
+                      </td>
+                      <td className="px-3 py-2" style={{ color: isWeekend ? 'var(--danger)' : 'var(--text-sub)' }}>
+                        {DAY_LABELS[dayOfWeek]}
+                      </td>
+                      <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
+                        {ATTENDANCE_LABEL[entry.attendance] ?? entry.attendance}
+                      </td>
+                      <td className="px-3 py-2">
+                        {entry.workLogs.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {entry.workLogs.map((wl) => (
+                              <span key={wl.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px]" style={{ backgroundColor: 'var(--primary-bg)', color: 'var(--primary)' }}>
+                                {wl.project?.name ?? '—'} <strong>{wl.hours}h</strong>
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--text-sub)' }}>—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-right font-medium" style={{ color: 'var(--text)' }}>
+                        {totalH > 0 ? `${totalH}h` : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ──────────── 반려 사유 모달 ────────────
 
@@ -105,12 +246,15 @@ export default function TeamTimesheetReview() {
   const [rejectTarget, setRejectTarget] = useState<{ id: string; name: string } | null>(null);
   const [filterPart, setFilterPart] = useState<string>('ALL');
   const [filterMember, setFilterMember] = useState<string>('ALL');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [popupTarget, setPopupTarget] = useState<{ timesheetId: string; memberName: string } | null>(null);
 
   const { data: membersStatus = [], isLoading: loadingStatus } = useTeamMembersStatus(currentTeamId, yearMonth);
   const { data: teamSummary, isLoading: loadingSummary } = useTeamSummary(currentTeamId, yearMonth);
 
   const approveMutation = useApproveTimesheet(currentTeamId, yearMonth);
   const rejectMutation = useRejectTimesheet(currentTeamId, yearMonth);
+  const batchApproveMutation = useBatchApproveTimesheets(currentTeamId, yearMonth);
 
   // 파트 목록 추출
   const partOptions = useMemo(() => {
@@ -140,10 +284,47 @@ export default function TeamTimesheetReview() {
   const submittedCount = filteredMembers.filter((r) => r.status === 'SUBMITTED' || r.status === 'APPROVED').length;
   const notSubmittedCount = totalCount - submittedCount;
 
+  // 일괄승인 가능한 행 (SUBMITTED 상태이면서 timesheetId가 있는 행)
+  const approvableRows = useMemo(
+    () => filteredMembers.filter((r) => r.status === 'SUBMITTED' && r.timesheetId),
+    [filteredMembers],
+  );
+
+  // 데이터 변경 시 선택 초기화
+  useEffect(() => { setSelectedIds(new Set()); }, [yearMonth, filterPart, filterMember]);
+
+  const toggleSelect = useCallback((timesheetId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(timesheetId)) next.delete(timesheetId);
+      else next.add(timesheetId);
+      return next;
+    });
+  }, []);
+
+  const toggleAll = useCallback(() => {
+    if (selectedIds.size === approvableRows.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(approvableRows.map((r) => r.timesheetId!)));
+    }
+  }, [approvableRows, selectedIds]);
+
   const handleApprove = (timesheetId: string, memberName: string) => {
     approveMutation.mutate(timesheetId, {
       onSuccess: () => toast.success(`${memberName}님의 시간표를 승인했습니다.`),
       onError: () => toast.error('승인 처리 중 오류가 발생했습니다.'),
+    });
+  };
+
+  const handleBatchApprove = () => {
+    if (selectedIds.size === 0) return;
+    batchApproveMutation.mutate(Array.from(selectedIds), {
+      onSuccess: (data) => {
+        toast.success(`${data.approvedCount}건의 시간표를 일괄 승인했습니다.`);
+        setSelectedIds(new Set());
+      },
+      onError: () => toast.error('일괄 승인 중 오류가 발생했습니다.'),
     });
   };
 
@@ -159,6 +340,12 @@ export default function TeamTimesheetReview() {
         onError: () => toast.error('반려 처리 중 오류가 발생했습니다.'),
       },
     );
+  };
+
+  const handleRowClick = (row: TeamMemberStatusRow) => {
+    if (row.timesheetId) {
+      setPopupTarget({ timesheetId: row.timesheetId, memberName: row.memberName });
+    }
   };
 
   const projects = teamSummary?.projects ?? [];
@@ -238,6 +425,22 @@ export default function TeamTimesheetReview() {
             <option key={m.id} value={m.id}>{m.name}</option>
           ))}
         </select>
+
+        {/* 일괄승인 버튼 */}
+        {selectedIds.size > 0 && (
+          <>
+            <div className="w-px h-5 bg-[var(--gray-border)]" />
+            <button
+              onClick={handleBatchApprove}
+              disabled={batchApproveMutation.isPending}
+              className="flex items-center gap-1 px-3 py-1.5 rounded text-[12px] font-medium text-white transition-colors"
+              style={{ backgroundColor: 'var(--ok)' }}
+            >
+              <CheckCircle size={14} />
+              일괄 승인 ({selectedIds.size}건)
+            </button>
+          </>
+        )}
       </div>
 
       <div className="flex flex-col gap-4">
@@ -275,101 +478,139 @@ export default function TeamTimesheetReview() {
               <table className="w-full border-collapse text-[12px]">
                 <thead>
                   <tr style={{ backgroundColor: 'var(--tbl-header)' }}>
-                    {['성명', '직급', '파트', '직책', '상태', '총근무시간', '근무일수', '제출일', '팀장승인', '액션'].map((h) => (
+                    <th
+                      className="px-2 py-2 text-center"
+                      style={{ color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', width: '40px' }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={approvableRows.length > 0 && selectedIds.size === approvableRows.length}
+                        onChange={toggleAll}
+                        className="accent-[var(--primary)]"
+                      />
+                    </th>
+                    {['성명', '직급', '파트', '직책', '상태', '총근무시간', '근무일수', '제출일', '팀장승인'].map((h) => (
                       <th
                         key={h}
-                        className={`px-3 py-2 text-left font-semibold ${h === '액션' ? 'text-right' : ''}`}
-                        style={{
-                          color: 'var(--text-sub)',
-                          borderBottom: '1px solid var(--gray-border)',
-                          ...(h === '액션' ? { width: '120px' } : {}),
-                        }}
+                        className="px-3 py-2 text-left font-semibold"
+                        style={{ color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)' }}
                       >
                         {h}
                       </th>
                     ))}
+                    <th
+                      className="px-3 py-2 text-right font-semibold"
+                      style={{ color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)', width: '120px' }}
+                    >
+                      액션
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredMembers.map((row, idx) => (
-                    <tr
-                      key={row.memberId}
-                      style={{
-                        backgroundColor: idx % 2 === 0 ? 'white' : 'var(--row-alt)',
-                        borderBottom: '1px solid var(--gray-border)',
-                      }}
-                    >
-                      <td className="px-3 py-2 font-medium" style={{ color: 'var(--text)' }}>
-                        {row.memberName}
-                      </td>
-                      <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
-                        {row.position ? (POSITION_LABEL[row.position] ?? row.position) : '—'}
-                      </td>
-                      <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
-                        {row.partName ?? '—'}
-                      </td>
-                      <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
-                        {row.jobTitle ?? '—'}
-                      </td>
-                      <td className="px-3 py-2">
-                        <Badge variant={TIMESHEET_STATUS_VARIANT[row.status] ?? 'gray'} dot>
-                          {TIMESHEET_STATUS_LABEL[row.status] ?? row.status}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-2 font-medium" style={{ color: 'var(--text)' }}>
-                        {row.totalWorkHours}h
-                      </td>
-                      <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
-                        {row.workDays}일
-                      </td>
-                      <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
-                        {row.submittedAt
-                          ? new Date(row.submittedAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })
-                          : '—'}
-                      </td>
-                      <td className="px-3 py-2">
-                        {row.leaderApproval ? (
-                          <Badge variant={TIMESHEET_STATUS_VARIANT[row.leaderApproval.status] ?? 'gray'}>
-                            {TIMESHEET_STATUS_LABEL[row.leaderApproval.status] ?? row.leaderApproval.status}
+                  {filteredMembers.map((row, idx) => {
+                    const isApprovable = row.status === 'SUBMITTED' && !!row.timesheetId;
+                    const isChecked = !!row.timesheetId && selectedIds.has(row.timesheetId);
+
+                    return (
+                      <tr
+                        key={row.memberId}
+                        className={row.timesheetId ? 'cursor-pointer' : ''}
+                        style={{
+                          backgroundColor: idx % 2 === 0 ? 'white' : 'var(--row-alt)',
+                          borderBottom: '1px solid var(--gray-border)',
+                        }}
+                        onClick={() => handleRowClick(row)}
+                      >
+                        <td
+                          className="px-2 py-2 text-center"
+                          style={{ width: '40px' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {isApprovable && (
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleSelect(row.timesheetId!)}
+                              className="accent-[var(--primary)]"
+                            />
+                          )}
+                        </td>
+                        <td className="px-3 py-2 font-medium" style={{ color: 'var(--text)' }}>
+                          {row.memberName}
+                        </td>
+                        <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
+                          {row.position ? (POSITION_LABEL[row.position] ?? row.position) : '—'}
+                        </td>
+                        <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
+                          {row.partName ?? '—'}
+                        </td>
+                        <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
+                          {row.jobTitle ?? '—'}
+                        </td>
+                        <td className="px-3 py-2">
+                          <Badge variant={TIMESHEET_STATUS_VARIANT[row.status] ?? 'gray'} dot>
+                            {TIMESHEET_STATUS_LABEL[row.status] ?? row.status}
                           </Badge>
-                        ) : (
-                          <span style={{ color: 'var(--text-sub)' }}>—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-right" style={{ width: '120px' }}>
-                        {row.timesheetId && row.status === 'SUBMITTED' && (
-                          <div className="flex gap-1 justify-end">
-                            <button
-                              onClick={() => handleApprove(row.timesheetId!, row.memberName)}
-                              disabled={approveMutation.isPending}
-                              className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-white transition-colors"
-                              style={{ backgroundColor: 'var(--ok)' }}
-                              title="승인"
-                            >
-                              <CheckCircle size={12} />
-                              승인
-                            </button>
-                            <button
-                              onClick={() => setRejectTarget({ id: row.timesheetId!, name: row.memberName })}
-                              disabled={rejectMutation.isPending}
-                              className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-white transition-colors"
-                              style={{ backgroundColor: 'var(--danger)' }}
-                              title="반려"
-                            >
-                              <XCircle size={12} />
-                              반려
-                            </button>
-                          </div>
-                        )}
-                        {row.leaderApproval?.status === 'APPROVED' && (
-                          <span className="text-[11px]" style={{ color: 'var(--ok)' }}>승인완료</span>
-                        )}
-                        {row.leaderApproval?.status === 'REJECTED' && (
-                          <span className="text-[11px]" style={{ color: 'var(--danger)' }}>반려됨</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-3 py-2 font-medium" style={{ color: 'var(--text)' }}>
+                          {row.totalWorkHours}h
+                        </td>
+                        <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
+                          {row.workDays}일
+                        </td>
+                        <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
+                          {row.submittedAt
+                            ? new Date(row.submittedAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })
+                            : '—'}
+                        </td>
+                        <td className="px-3 py-2">
+                          {row.leaderApproval ? (
+                            <Badge variant={TIMESHEET_STATUS_VARIANT[row.leaderApproval.status] ?? 'gray'}>
+                              {TIMESHEET_STATUS_LABEL[row.leaderApproval.status] ?? row.leaderApproval.status}
+                            </Badge>
+                          ) : (
+                            <span style={{ color: 'var(--text-sub)' }}>—</span>
+                          )}
+                        </td>
+                        <td
+                          className="px-3 py-2 text-right"
+                          style={{ width: '120px' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {row.timesheetId && row.status === 'SUBMITTED' && (
+                            <div className="flex gap-1 justify-end">
+                              <button
+                                onClick={() => handleApprove(row.timesheetId!, row.memberName)}
+                                disabled={approveMutation.isPending}
+                                className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-white transition-colors"
+                                style={{ backgroundColor: 'var(--ok)' }}
+                                title="승인"
+                              >
+                                <CheckCircle size={12} />
+                                승인
+                              </button>
+                              <button
+                                onClick={() => setRejectTarget({ id: row.timesheetId!, name: row.memberName })}
+                                disabled={rejectMutation.isPending}
+                                className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-white transition-colors"
+                                style={{ backgroundColor: 'var(--danger)' }}
+                                title="반려"
+                              >
+                                <XCircle size={12} />
+                                반려
+                              </button>
+                            </div>
+                          )}
+                          {row.leaderApproval?.status === 'APPROVED' && (
+                            <span className="text-[11px]" style={{ color: 'var(--ok)' }}>승인완료</span>
+                          )}
+                          {row.leaderApproval?.status === 'REJECTED' && (
+                            <span className="text-[11px]" style={{ color: 'var(--danger)' }}>반려됨</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -506,6 +747,15 @@ export default function TeamTimesheetReview() {
           memberName={rejectTarget.name}
           onConfirm={handleRejectConfirm}
           onClose={() => setRejectTarget(null)}
+        />
+      )}
+
+      {/* 시간표 상세 팝업 */}
+      {popupTarget && (
+        <TimesheetPopup
+          timesheetId={popupTarget.timesheetId}
+          memberName={popupTarget.memberName}
+          onClose={() => setPopupTarget(null)}
         />
       )}
     </div>
