@@ -131,44 +131,42 @@ export default function TeamManagement() {
 
   return (
     <div>
-      {/* 필터 바 */}
-      <div className="bg-white rounded-lg border border-[var(--gray-border)] p-4 mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-[12.5px] font-medium" style={{ color: 'var(--text-sub)' }}>
-            상태 필터:
-          </span>
-          <div className="flex gap-1">
-            {FILTER_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setFilter(opt.value)}
-                className={[
-                  'px-3 py-1 text-[12px] font-medium rounded border transition-colors',
-                  filter === opt.value
-                    ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
-                    : 'bg-white text-[var(--text-sub)] border-[var(--gray-border)] hover:border-[var(--primary)] hover:text-[var(--primary)]',
-                ].join(' ')}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+      {/* 툴바 카드 */}
+      <div
+        className="bg-white rounded-lg border border-[var(--gray-border)] flex items-center gap-3 mb-4"
+        style={{ padding: '10px 16px' }}
+      >
+        <h1 className="text-[16px] font-semibold flex-shrink-0" style={{ color: 'var(--text)' }}>
+          팀 관리
+        </h1>
+        <div className="w-px h-5 bg-[var(--gray-border)]" />
+
+        {/* 상태 필터 */}
+        <div className="flex gap-1">
+          {FILTER_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setFilter(opt.value)}
+              className={[
+                'px-3 py-1 text-[12px] font-medium rounded border transition-colors',
+                filter === opt.value
+                  ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
+                  : 'bg-white text-[var(--text-sub)] border-[var(--gray-border)] hover:border-[var(--primary)] hover:text-[var(--primary)]',
+              ].join(' ')}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
+
+        <div className="flex-1" />
+        <span className="text-[12px] flex-shrink-0" style={{ color: 'var(--text-sub)' }}>
+          총 {teams.length}건
+        </span>
       </div>
 
       {/* 팀 목록 테이블 */}
       <div className="bg-white rounded-lg border border-[var(--gray-border)] overflow-hidden">
-        <div
-          className="flex items-center justify-between border-b border-[var(--gray-border)]"
-          style={{ padding: '11px 16px' }}
-        >
-          <p className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>
-            팀 목록
-          </p>
-          <p className="text-[12px]" style={{ color: 'var(--text-sub)' }}>
-            총 {teams.length}건
-          </p>
-        </div>
 
         <Table>
           <TableHeader>

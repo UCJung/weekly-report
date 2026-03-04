@@ -355,46 +355,29 @@ export default function ProjectManagement() {
   const pendingCount = projects.filter((p) => p.status === 'PENDING').length;
 
   return (
-    <div className="space-y-4">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-[15px] font-bold" style={{ color: 'var(--text)' }}>
-            전역 프로젝트 관리
-          </h2>
-          <p className="text-[12px] mt-0.5" style={{ color: 'var(--text-sub)' }}>
-            시스템 전체 프로젝트를 관리합니다. 팀별 등록은 팀장이 수행합니다.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {pendingCount > 0 && (
-            <Badge variant="warn" dot>{pendingCount}건 승인 대기</Badge>
-          )}
-          <Button variant="primary" size="sm" onClick={() => setModalProject('new')}>
-            <Plus size={13} className="mr-1" />
-            프로젝트 생성
-          </Button>
-        </div>
-      </div>
-
-      {/* 필터 바 */}
+    <div>
+      {/* 툴바 카드 */}
       <div
-        className="bg-white rounded-xl px-4 py-3 flex flex-wrap items-center gap-3"
-        style={{ border: '1px solid var(--gray-border)' }}
+        className="bg-white rounded-lg border border-[var(--gray-border)] flex flex-wrap items-center gap-3 mb-4"
+        style={{ padding: '10px 16px' }}
       >
+        <h1 className="text-[16px] font-semibold flex-shrink-0" style={{ color: 'var(--text)' }}>
+          프로젝트 관리
+        </h1>
+        <div className="w-px h-5 bg-[var(--gray-border)]" />
+
         {/* 검색 */}
-        <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg flex-1 min-w-[200px]"
-          style={{ border: '1px solid var(--gray-border)' }}
-        >
-          <Search size={13} style={{ color: 'var(--text-sub)' }} />
+        <div className="relative flex-shrink-0" style={{ width: 200 }}>
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-sub)' }} />
           <input
             type="text"
             placeholder="프로젝트명 또는 코드 검색"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 text-[12px] outline-none bg-transparent"
-            style={{ color: 'var(--text)' }}
+            className="w-full pl-8 pr-3 py-1.5 text-[12px] rounded border outline-none transition-colors"
+            style={{ borderColor: 'var(--gray-border)', color: 'var(--text)' }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--primary)'; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--gray-border)'; }}
           />
         </div>
 
@@ -404,11 +387,11 @@ export default function ProjectManagement() {
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+              className="px-3 py-1 text-[12px] font-medium rounded border transition-colors"
               style={{
                 backgroundColor: categoryFilter === cat ? 'var(--primary-bg)' : 'transparent',
                 color: categoryFilter === cat ? 'var(--primary)' : 'var(--text-sub)',
-                border: `1px solid ${categoryFilter === cat ? 'var(--primary)' : 'var(--gray-border)'}`,
+                borderColor: categoryFilter === cat ? 'var(--primary)' : 'var(--gray-border)',
               }}
             >
               {cat === 'ALL' ? '전체' : CATEGORY_LABELS[cat as ProjectCategory]}
@@ -422,22 +405,31 @@ export default function ProjectManagement() {
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
-              className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+              className="px-3 py-1 text-[12px] font-medium rounded border transition-colors"
               style={{
                 backgroundColor: statusFilter === st ? 'var(--primary-bg)' : 'transparent',
                 color: statusFilter === st ? 'var(--primary)' : 'var(--text-sub)',
-                border: `1px solid ${statusFilter === st ? 'var(--primary)' : 'var(--gray-border)'}`,
+                borderColor: statusFilter === st ? 'var(--primary)' : 'var(--gray-border)',
               }}
             >
               {st === 'ALL' ? '전체' : STATUS_LABELS[st as ProjectStatus]}
             </button>
           ))}
         </div>
+
+        <div className="flex-1" />
+        {pendingCount > 0 && (
+          <Badge variant="warn" dot>{pendingCount}건 승인 대기</Badge>
+        )}
+        <Button variant="primary" size="sm" onClick={() => setModalProject('new')}>
+          <Plus size={13} className="mr-1" />
+          프로젝트 생성
+        </Button>
       </div>
 
       {/* 테이블 */}
       <div
-        className="bg-white rounded-xl overflow-hidden"
+        className="bg-white rounded-lg overflow-hidden"
         style={{ border: '1px solid var(--gray-border)' }}
       >
         <Table>

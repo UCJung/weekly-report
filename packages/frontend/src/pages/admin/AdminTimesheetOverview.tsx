@@ -55,67 +55,67 @@ export default function AdminTimesheetOverview() {
   };
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* 페이지 헤더 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h2 className="text-[16px] font-semibold" style={{ color: 'var(--text)' }}>
-            근무시간표 관리
-          </h2>
+    <div className="flex flex-col gap-4">
+      {/* 툴바 카드 */}
+      <div
+        className="bg-white rounded-lg border border-[var(--gray-border)] flex items-center gap-3"
+        style={{ padding: '10px 16px' }}
+      >
+        <h1 className="text-[16px] font-semibold flex-shrink-0" style={{ color: 'var(--text)' }}>
+          근무시간표 관리
+        </h1>
+        <div className="w-px h-5 bg-[var(--gray-border)]" />
 
-          {/* 월 탐색 */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setYearMonth(getPreviousYearMonth(yearMonth))}
-              className="p-1 rounded hover:bg-gray-100 transition-colors"
-              style={{ color: 'var(--text-sub)' }}
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span
-              className="text-[14px] font-medium min-w-[96px] text-center"
-              style={{ color: 'var(--text)' }}
-            >
-              {formatYearMonth(yearMonth)}
-            </span>
-            <button
-              onClick={() => setYearMonth(getNextYearMonth(yearMonth))}
-              className="p-1 rounded hover:bg-gray-100 transition-colors"
-              style={{ color: 'var(--text-sub)' }}
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
+        {/* 월 탐색 */}
+        <button
+          onClick={() => setYearMonth(getPreviousYearMonth(yearMonth))}
+          className="p-1 rounded hover:bg-gray-100 transition-colors"
+          style={{ color: 'var(--text-sub)' }}
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <span
+          className="text-[14px] font-medium min-w-[96px] text-center"
+          style={{ color: 'var(--text)' }}
+        >
+          {formatYearMonth(yearMonth)}
+        </span>
+        <button
+          onClick={() => setYearMonth(getNextYearMonth(yearMonth))}
+          className="p-1 rounded hover:bg-gray-100 transition-colors"
+          style={{ color: 'var(--text-sub)' }}
+        >
+          <ChevronRight size={16} />
+        </button>
 
-        <div className="flex items-center gap-2">
-          {/* 엑셀 다운로드 */}
-          <button
-            onClick={handleExport}
-            disabled={downloading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[13px] font-medium border transition-colors"
-            style={{
-              borderColor: 'var(--gray-border)',
-              color: 'var(--text)',
-              backgroundColor: 'white',
-            }}
-          >
-            <Download size={14} />
-            {downloading ? '다운로드 중...' : '엑셀 다운로드'}
-          </button>
+        <div className="flex-1" />
 
-          {/* 최종 승인 */}
-          <button
-            onClick={handleAdminApprove}
-            disabled={!canFinalApprove || adminApproveMutation.isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[13px] font-medium text-white transition-colors disabled:opacity-40"
-            style={{ backgroundColor: 'var(--primary)' }}
-            title={!canFinalApprove ? '모든 팀의 팀장 승인이 완료되어야 최종 승인이 가능합니다.' : ''}
-          >
-            <ShieldCheck size={14} />
-            {adminApproveMutation.isPending ? '처리 중...' : '최종 승인'}
-          </button>
-        </div>
+        {/* 엑셀 다운로드 */}
+        <button
+          onClick={handleExport}
+          disabled={downloading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[12px] font-medium border transition-colors"
+          style={{
+            borderColor: 'var(--gray-border)',
+            color: 'var(--text)',
+            backgroundColor: 'white',
+          }}
+        >
+          <Download size={14} />
+          {downloading ? '다운로드 중...' : '엑셀 다운로드'}
+        </button>
+
+        {/* 최종 승인 */}
+        <button
+          onClick={handleAdminApprove}
+          disabled={!canFinalApprove || adminApproveMutation.isPending}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[12px] font-medium text-white transition-colors disabled:opacity-40"
+          style={{ backgroundColor: 'var(--primary)' }}
+          title={!canFinalApprove ? '모든 팀의 팀장 승인이 완료되어야 최종 승인이 가능합니다.' : ''}
+        >
+          <ShieldCheck size={14} />
+          {adminApproveMutation.isPending ? '처리 중...' : '최종 승인'}
+        </button>
       </div>
 
       {/* 로딩 */}
