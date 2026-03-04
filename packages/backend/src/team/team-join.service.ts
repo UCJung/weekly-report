@@ -5,6 +5,7 @@ import { BusinessException } from '../common/filters/business-exception';
 import { CreateTeamRequestDto } from './dto/create-team-request.dto';
 import { ReviewJoinRequestDto } from './dto/review-join-request.dto';
 import { ListTeamsQueryDto, TeamFilter } from './dto/list-teams-query.dto';
+import { parsePagination, buildPaginationResponse } from '../common/utils/pagination.util';
 
 @Injectable()
 export class TeamJoinService {
@@ -15,9 +16,7 @@ export class TeamJoinService {
   // ── 팀 목록 조회 (검색, 필터, 페이지네이션) ──────────────────────────────
 
   async listTeams(query: ListTeamsQueryDto, memberId: string) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { skip, take, page, limit } = parsePagination(query.page, query.limit);
     const filter = query.filter ?? TeamFilter.ALL;
 
     // 현재 사용자의 소속 팀 ID 목록
@@ -54,7 +53,7 @@ export class TeamJoinService {
         },
         orderBy: { name: 'asc' },
         skip,
-        take: limit,
+        take,
       }),
       this.prisma.team.count({ where: whereConditions }),
     ]);
@@ -67,15 +66,7 @@ export class TeamJoinService {
       _count: undefined,
     }));
 
-    return {
-      data: result,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return buildPaginationResponse(result, total, page, limit);
   }
 
   // ── 팀 생성 신청 ─────────────────────────────────────────────────────────

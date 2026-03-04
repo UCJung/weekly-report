@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BusinessException } from '../common/filters/business-exception';
 import { CreateWeeklyReportDto } from './dto/create-weekly-report.dto';
 import { UpdateWeeklyReportDto } from './dto/update-weekly-report.dto';
-import { getWeekRange } from './week-utils';
+import { getWeekRange } from '@uc-teamspace/shared/constants/week-utils';
 
 @Injectable()
 export class ReportService {

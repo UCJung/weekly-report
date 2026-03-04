@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ReportStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CarryForwardDto } from './dto/carry-forward.dto';
-import { getWeekRange, getPreviousWeekLabel } from './week-utils';
+import { getWeekRange, getPreviousWeekLabel } from '@uc-teamspace/shared/constants/week-utils';
 
 @Injectable()
 export class CarryForwardService {

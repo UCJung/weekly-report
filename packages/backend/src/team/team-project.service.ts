@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BusinessException } from '../common/filters/business-exception';
 import { AddTeamProjectsDto } from './dto/add-team-projects.dto';
 import { ReorderTeamProjectsDto } from './dto/reorder-team-projects.dto';
+import { applyReorder } from '../common/utils/reorder.util';
 
 @Injectable()
 export class TeamProjectService {
@@ -135,13 +136,8 @@ export class TeamProjectService {
   }
 
   async reorderTeamProjects(teamId: string, dto: ReorderTeamProjectsDto) {
-    return this.prisma.$transaction(
-      dto.orderedIds.map((id, index) =>
-        this.prisma.teamProject.update({
-          where: { id },
-          data: { sortOrder: index },
-        })
-      )
+    return applyReorder(this.prisma, dto.orderedIds, (id, index) =>
+      this.prisma.teamProject.update({ where: { id }, data: { sortOrder: index } }),
     );
   }
 }

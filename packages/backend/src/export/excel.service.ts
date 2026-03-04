@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as ExcelJS from 'exceljs';
 import { PrismaService } from '../prisma/prisma.service';
-import { getWeekRange } from '../weekly-report/week-utils';
+import { getWeekRange } from '@uc-teamspace/shared/constants/week-utils';
 import { ExportQueryDto, ExportType } from './dto/export-query.dto';
 
 @Injectable()

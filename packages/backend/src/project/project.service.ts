@@ -6,6 +6,8 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectQueryDto } from './dto/project-query.dto';
 import { ReorderProjectsDto } from './dto/reorder-projects.dto';
 import { RequestProjectDto } from './dto/request-project.dto';
+import { parsePagination, buildPaginationResponse } from '../common/utils/pagination.util';
+import { applyReorder } from '../common/utils/reorder.util';
 
 const PROJECT_INCLUDE = {
   manager: {
@@ -18,7 +20,8 @@ export class ProjectService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: ProjectQueryDto) {
-    const { category, status, page = 1, limit = 20 } = query;
+    const { category, status } = query;
+    const { skip, take, page, limit } = parsePagination(query.page, query.limit);
     const where: Prisma.ProjectWhereInput = {
       ...(category && { category }),
       ...(status && { status }),
@@ -29,21 +32,13 @@ export class ProjectService {
         where,
         include: PROJECT_INCLUDE,
         orderBy: [{ sortOrder: 'asc' }, { category: 'asc' }, { name: 'asc' }],
-        skip: (page - 1) * limit,
-        take: limit,
+        skip,
+        take,
       }),
       this.prisma.project.count({ where }),
     ]);
 
-    return {
-      data,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return buildPaginationResponse(data, total, page, limit);
   }
 
   async findById(id: string) {
@@ -77,10 +72,8 @@ export class ProjectService {
   }
 
   async reorder(dto: ReorderProjectsDto) {
-    return this.prisma.$transaction(
-      dto.orderedIds.map((id, index) =>
-        this.prisma.project.update({ where: { id }, data: { sortOrder: index } })
-      )
+    return applyReorder(this.prisma, dto.orderedIds, (id, index) =>
+      this.prisma.project.update({ where: { id }, data: { sortOrder: index } }),
     );
   }
 

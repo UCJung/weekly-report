@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BusinessException } from '../common/filters/business-exception';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
+import { applyReorder } from '../common/utils/reorder.util';
 
 @Injectable()
 export class MemberService {
@@ -109,13 +110,8 @@ export class MemberService {
   }
 
   async reorder(teamId: string, orderedIds: string[]) {
-    await this.prisma.$transaction(
-      orderedIds.map((id, index) =>
-        this.prisma.member.update({
-          where: { id },
-          data: { sortOrder: index },
-        }),
-      ),
+    await applyReorder(this.prisma, orderedIds, (id, index) =>
+      this.prisma.member.update({ where: { id }, data: { sortOrder: index } }),
     );
     return this.findByTeam(teamId);
   }

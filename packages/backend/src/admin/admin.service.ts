@@ -12,6 +12,7 @@ import { CreateGlobalProjectDto } from './dto/create-global-project.dto';
 import { UpdateGlobalProjectDto } from './dto/update-global-project.dto';
 import { ListGlobalProjectsDto } from './dto/list-global-projects.dto';
 import { ApproveProjectDto } from './dto/approve-project.dto';
+import { parsePagination, buildPaginationResponse } from '../common/utils/pagination.util';
 
 @Injectable()
 export class AdminService {
@@ -27,9 +28,7 @@ export class AdminService {
   // ──────────────────────────────────────
 
   async listAccounts(dto: ListAccountsDto) {
-    const page = dto.page ?? 1;
-    const limit = dto.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { skip, take, page, limit } = parsePagination(dto.page, dto.limit);
 
     const where: Prisma.MemberWhereInput = {};
     if (dto.status) {
@@ -64,23 +63,20 @@ export class AdminService {
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take,
       }),
     ]);
 
-    return {
-      data: accounts.map((a) => ({
+    return buildPaginationResponse(
+      accounts.map((a) => ({
         ...a,
         teams: a.teamMemberships.map((tm) => tm.team),
         teamMemberships: undefined,
       })),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+      total,
+      page,
+      limit,
+    );
   }
 
   async updateAccountStatus(id: string, dto: UpdateAccountStatusDto) {
@@ -190,9 +186,7 @@ export class AdminService {
   // ──────────────────────────────────────
 
   async listTeams(dto: ListTeamsDto) {
-    const page = dto.page ?? 1;
-    const limit = dto.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { skip, take, page, limit } = parsePagination(dto.page, dto.limit);
 
     const where = dto.status ? { teamStatus: dto.status } : {};
 
@@ -223,23 +217,20 @@ export class AdminService {
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take,
       }),
     ]);
 
-    return {
-      data: teams.map((t) => ({
+    return buildPaginationResponse(
+      teams.map((t) => ({
         ...t,
         memberCount: t._count.teamMemberships,
         _count: undefined,
       })),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+      total,
+      page,
+      limit,
+    );
   }
 
   async updateTeamStatus(id: string, dto: UpdateTeamStatusDto) {
@@ -329,9 +320,7 @@ export class AdminService {
   // ──────────────────────────────────────
 
   async listProjects(dto: ListGlobalProjectsDto) {
-    const page = dto.page ?? 1;
-    const limit = dto.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { skip, take, page, limit } = parsePagination(dto.page, dto.limit);
 
     const where: Prisma.ProjectWhereInput = {};
     if (dto.category) {
@@ -367,25 +356,22 @@ export class AdminService {
         },
         orderBy: [{ sortOrder: 'asc' }, { category: 'asc' }, { name: 'asc' }],
         skip,
-        take: limit,
+        take,
       }),
     ]);
 
-    return {
-      data: projects.map((p) => ({
+    return buildPaginationResponse(
+      projects.map((p) => ({
         ...p,
         managerName: p.manager?.name ?? null,
         teamCount: p._count.teamProjects,
         workItemCount: p._count.workItems,
         _count: undefined,
       })),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+      total,
+      page,
+      limit,
+    );
   }
 
   async createProject(dto: CreateGlobalProjectDto) {

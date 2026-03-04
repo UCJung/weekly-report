@@ -2,6 +2,7 @@ import { Injectable, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BusinessException } from '../common/filters/business-exception';
 import { ReorderPartsDto } from './dto/reorder-parts.dto';
+import { applyReorder } from '../common/utils/reorder.util';
 
 @Injectable()
 export class TeamService {
@@ -35,10 +36,8 @@ export class TeamService {
 
   async reorderParts(teamId: string, dto: ReorderPartsDto) {
     await this.findById(teamId);
-    return this.prisma.$transaction(
-      dto.orderedIds.map((id, index) =>
-        this.prisma.part.update({ where: { id }, data: { sortOrder: index } })
-      )
+    return applyReorder(this.prisma, dto.orderedIds, (id, index) =>
+      this.prisma.part.update({ where: { id }, data: { sortOrder: index } }),
     );
   }
 }

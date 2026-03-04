@@ -7,7 +7,7 @@ import { UpdatePartSummaryDto } from './dto/update-part-summary.dto';
 import { CreateSummaryDto } from './dto/create-summary.dto';
 import { MergeRowsDto } from './dto/merge-rows.dto';
 import { UpdateSummaryWorkItemDto } from './dto/update-summary-work-item.dto';
-import { getWeekRange } from './week-utils';
+import { getWeekRange } from '@uc-teamspace/shared/constants/week-utils';
 
 /** Reusable Prisma include for WorkItems with project */
 const WORK_ITEMS_WITH_PROJECT = {
