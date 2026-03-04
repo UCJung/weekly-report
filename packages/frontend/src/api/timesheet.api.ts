@@ -49,6 +49,9 @@ export interface TeamSummaryMatrixRow {
   memberId: string;
   memberName: string;
   position: string | null;
+  jobTitle: string | null;
+  partId: string | null;
+  partName: string | null;
   timesheetId: string;
   status: string;
   totalHours: number;

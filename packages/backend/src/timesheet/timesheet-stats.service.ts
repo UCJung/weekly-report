@@ -119,7 +119,7 @@ export class TimesheetStatsService {
     const timesheets = await this.prisma.monthlyTimesheet.findMany({
       where: { teamId, yearMonth },
       include: {
-        member: { select: { id: true, name: true, position: true } },
+        member: { select: { id: true, name: true, position: true, jobTitle: true } },
         entries: {
           include: {
             workLogs: {
@@ -132,6 +132,20 @@ export class TimesheetStatsService {
 
     if (timesheets.length === 0) {
       return { members: [], projects: [], matrix: [] };
+    }
+
+    // 팀원별 파트 정보 조회
+    const memberIds = timesheets.map((ts) => ts.member.id);
+    const memberships = await this.prisma.teamMembership.findMany({
+      where: { teamId, memberId: { in: memberIds } },
+      include: { part: { select: { id: true, name: true } } },
+    });
+    const memberPartMap = new Map<string, { partId: string | null; partName: string | null }>();
+    for (const ms of memberships) {
+      memberPartMap.set(ms.memberId, {
+        partId: ms.part?.id ?? null,
+        partName: ms.part?.name ?? null,
+      });
     }
 
     // 프로젝트 목록 수집
@@ -172,10 +186,15 @@ export class TimesheetStatsService {
         };
       });
 
+      const partInfo = memberPartMap.get(ts.member.id);
+
       return {
         memberId: ts.member.id,
         memberName: ts.member.name,
         position: ts.member.position,
+        jobTitle: (ts.member as any).jobTitle ?? null,
+        partId: partInfo?.partId ?? null,
+        partName: partInfo?.partName ?? null,
         timesheetId: ts.id,
         status: ts.status,
         totalHours: Math.round(totalHours * 10) / 10,

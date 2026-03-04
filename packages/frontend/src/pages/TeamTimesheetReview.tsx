@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, CheckCircle, XCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -103,12 +103,42 @@ export default function TeamTimesheetReview() {
   const { currentTeamId } = useTeamStore();
   const [yearMonth, setYearMonth] = useState<string>(getCurrentYearMonth);
   const [rejectTarget, setRejectTarget] = useState<{ id: string; name: string } | null>(null);
+  const [filterPart, setFilterPart] = useState<string>('ALL');
+  const [filterMember, setFilterMember] = useState<string>('ALL');
 
   const { data: membersStatus = [], isLoading: loadingStatus } = useTeamMembersStatus(currentTeamId, yearMonth);
   const { data: teamSummary, isLoading: loadingSummary } = useTeamSummary(currentTeamId, yearMonth);
 
   const approveMutation = useApproveTimesheet(currentTeamId, yearMonth);
   const rejectMutation = useRejectTimesheet(currentTeamId, yearMonth);
+
+  // 파트 목록 추출
+  const partOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const row of membersStatus) {
+      if (row.partId && row.partName) map.set(row.partId, row.partName);
+    }
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [membersStatus]);
+
+  // 필터 적용
+  const filteredMembers = useMemo(() => {
+    let list = membersStatus;
+    if (filterPart !== 'ALL') list = list.filter((r) => r.partId === filterPart);
+    if (filterMember !== 'ALL') list = list.filter((r) => r.memberId === filterMember);
+    return list;
+  }, [membersStatus, filterPart, filterMember]);
+
+  // 필터 적용된 팀원 기준 멤버 선택지
+  const memberOptions = useMemo(() => {
+    const base = filterPart === 'ALL' ? membersStatus : membersStatus.filter((r) => r.partId === filterPart);
+    return base.map((r) => ({ id: r.memberId, name: r.memberName }));
+  }, [membersStatus, filterPart]);
+
+  // 카운트
+  const totalCount = filteredMembers.length;
+  const submittedCount = filteredMembers.filter((r) => r.status === 'SUBMITTED' || r.status === 'APPROVED').length;
+  const notSubmittedCount = totalCount - submittedCount;
 
   const handleApprove = (timesheetId: string, memberName: string) => {
     approveMutation.mutate(timesheetId, {
@@ -132,7 +162,12 @@ export default function TeamTimesheetReview() {
   };
 
   const projects = teamSummary?.projects ?? [];
-  const matrix = teamSummary?.matrix ?? [];
+  const matrix = useMemo(() => {
+    let list = teamSummary?.matrix ?? [];
+    if (filterPart !== 'ALL') list = list.filter((r) => r.partId === filterPart);
+    if (filterMember !== 'ALL') list = list.filter((r) => r.memberId === filterMember);
+    return list;
+  }, [teamSummary, filterPart, filterMember]);
 
   if (!currentTeamId) {
     return (
@@ -153,6 +188,7 @@ export default function TeamTimesheetReview() {
           시간표 취합/승인
         </h1>
         <div className="w-px h-5 bg-[var(--gray-border)]" />
+
         {/* 월 탐색 */}
         <button
           onClick={() => setYearMonth(getPreviousYearMonth(yearMonth))}
@@ -174,6 +210,34 @@ export default function TeamTimesheetReview() {
         >
           <ChevronRight size={16} />
         </button>
+
+        <div className="w-px h-5 bg-[var(--gray-border)]" />
+
+        {/* 파트 필터 */}
+        <select
+          value={filterPart}
+          onChange={(e) => { setFilterPart(e.target.value); setFilterMember('ALL'); }}
+          className="text-[12px] rounded px-2 py-1"
+          style={{ border: '1px solid var(--gray-border)', color: 'var(--text)' }}
+        >
+          <option value="ALL">전체 파트</option>
+          {partOptions.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+
+        {/* 팀원 필터 */}
+        <select
+          value={filterMember}
+          onChange={(e) => setFilterMember(e.target.value)}
+          className="text-[12px] rounded px-2 py-1"
+          style={{ border: '1px solid var(--gray-border)', color: 'var(--text)' }}
+        >
+          <option value="ALL">전체 팀원</option>
+          {memberOptions.map((m) => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="flex flex-col gap-4">
@@ -183,19 +247,26 @@ export default function TeamTimesheetReview() {
           style={{ backgroundColor: 'white', border: '1px solid var(--gray-border)' }}
         >
           <div
-            className="px-4 py-3"
+            className="px-4 py-3 flex items-center justify-between"
             style={{ borderBottom: '1px solid var(--gray-border)', backgroundColor: 'var(--tbl-header)' }}
           >
             <h2 className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
               팀원 제출현황
             </h2>
+            <div className="flex items-center gap-2 text-[12px]">
+              <span style={{ color: 'var(--text-sub)' }}>총원 <strong style={{ color: 'var(--text)' }}>{totalCount}</strong>명</span>
+              <span style={{ color: 'var(--text-sub)' }}>·</span>
+              <span style={{ color: 'var(--ok)' }}>제출 <strong>{submittedCount}</strong>명</span>
+              <span style={{ color: 'var(--text-sub)' }}>·</span>
+              <span style={{ color: 'var(--danger)' }}>미제출 <strong>{notSubmittedCount}</strong>명</span>
+            </div>
           </div>
 
           {loadingStatus ? (
             <div className="px-4 py-8 text-center text-[13px]" style={{ color: 'var(--text-sub)' }}>
               불러오는 중...
             </div>
-          ) : membersStatus.length === 0 ? (
+          ) : filteredMembers.length === 0 ? (
             <div className="px-4 py-8 text-center text-[13px]" style={{ color: 'var(--text-sub)' }}>
               팀원 데이터가 없습니다.
             </div>
@@ -204,11 +275,15 @@ export default function TeamTimesheetReview() {
               <table className="w-full border-collapse text-[12px]">
                 <thead>
                   <tr style={{ backgroundColor: 'var(--tbl-header)' }}>
-                    {['이름', '직급', '상태', '총근무시간', '근무일수', '제출일', '팀장승인', '액션'].map((h) => (
+                    {['성명', '직급', '파트', '직책', '상태', '총근무시간', '근무일수', '제출일', '팀장승인', '액션'].map((h) => (
                       <th
                         key={h}
-                        className="px-3 py-2 text-left font-semibold"
-                        style={{ color: 'var(--text-sub)', borderBottom: '1px solid var(--gray-border)' }}
+                        className={`px-3 py-2 text-left font-semibold ${h === '액션' ? 'text-right' : ''}`}
+                        style={{
+                          color: 'var(--text-sub)',
+                          borderBottom: '1px solid var(--gray-border)',
+                          ...(h === '액션' ? { width: '120px' } : {}),
+                        }}
                       >
                         {h}
                       </th>
@@ -216,7 +291,7 @@ export default function TeamTimesheetReview() {
                   </tr>
                 </thead>
                 <tbody>
-                  {membersStatus.map((row, idx) => (
+                  {filteredMembers.map((row, idx) => (
                     <tr
                       key={row.memberId}
                       style={{
@@ -229,6 +304,12 @@ export default function TeamTimesheetReview() {
                       </td>
                       <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
                         {row.position ? (POSITION_LABEL[row.position] ?? row.position) : '—'}
+                      </td>
+                      <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
+                        {row.partName ?? '—'}
+                      </td>
+                      <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
+                        {row.jobTitle ?? '—'}
                       </td>
                       <td className="px-3 py-2">
                         <Badge variant={TIMESHEET_STATUS_VARIANT[row.status] ?? 'gray'} dot>
@@ -255,9 +336,9 @@ export default function TeamTimesheetReview() {
                           <span style={{ color: 'var(--text-sub)' }}>—</span>
                         )}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-2 text-right" style={{ width: '120px' }}>
                         {row.timesheetId && row.status === 'SUBMITTED' && (
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 justify-end">
                             <button
                               onClick={() => handleApprove(row.timesheetId!, row.memberName)}
                               disabled={approveMutation.isPending}
@@ -319,21 +400,23 @@ export default function TeamTimesheetReview() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="border-collapse text-[12px]" style={{ minWidth: `${300 + projects.length * 140}px` }}>
+              <table className="border-collapse text-[12px]" style={{ minWidth: `${440 + projects.length * 140}px` }}>
                 <thead>
                   <tr style={{ backgroundColor: 'var(--tbl-header)' }}>
-                    <th
-                      className="px-3 py-2 text-left font-semibold sticky left-0"
-                      style={{
-                        color: 'var(--text-sub)',
-                        borderBottom: '1px solid var(--gray-border)',
-                        backgroundColor: 'var(--tbl-header)',
-                        width: '120px',
-                        zIndex: 1,
-                      }}
-                    >
-                      이름
-                    </th>
+                    {['성명', '직급', '파트', '직책'].map((h) => (
+                      <th
+                        key={h}
+                        className="px-3 py-2 text-left font-semibold sticky left-0"
+                        style={{
+                          color: 'var(--text-sub)',
+                          borderBottom: '1px solid var(--gray-border)',
+                          backgroundColor: 'var(--tbl-header)',
+                          ...(h === '성명' ? { width: '80px', zIndex: 1 } : {}),
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
                     <th
                       className="px-3 py-2 text-right font-semibold"
                       style={{
@@ -378,6 +461,15 @@ export default function TeamTimesheetReview() {
                         }}
                       >
                         {row.memberName}
+                      </td>
+                      <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
+                        {row.position ? (POSITION_LABEL[row.position] ?? row.position) : '—'}
+                      </td>
+                      <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
+                        {row.partName ?? '—'}
+                      </td>
+                      <td className="px-3 py-2" style={{ color: 'var(--text-sub)' }}>
+                        {row.jobTitle ?? '—'}
                       </td>
                       <td className="px-3 py-2 text-right font-semibold" style={{ color: 'var(--text)' }}>
                         {row.totalHours}h
