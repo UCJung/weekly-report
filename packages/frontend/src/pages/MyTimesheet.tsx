@@ -627,10 +627,10 @@ export default function MyTimesheet() {
   }
 
   return (
-    <div>
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 120px)' }}>
       {/* 툴바 카드 */}
       <div
-        className="bg-white rounded-lg border border-[var(--gray-border)] flex items-center gap-3 mb-4"
+        className="bg-white rounded-lg border border-[var(--gray-border)] flex items-center gap-3 mb-3 flex-shrink-0"
         style={{ padding: '10px 16px' }}
       >
         <h1 className="text-[16px] font-semibold" style={{ color: 'var(--text)' }}>
@@ -681,7 +681,7 @@ export default function MyTimesheet() {
 
       {/* 알림 */}
       {!isLoading && validationErrors.length > 0 && !isSubmitted && (
-        <div className="rounded-lg px-4 py-2 flex items-start gap-2 text-[12px] mb-3" style={{ backgroundColor: 'var(--warn-bg)', border: '1px solid var(--warn)', color: 'var(--warn)' }}>
+        <div className="rounded-lg px-4 py-2 flex items-start gap-2 text-[12px] mb-3 flex-shrink-0" style={{ backgroundColor: 'var(--warn-bg)', border: '1px solid var(--warn)', color: 'var(--warn)' }}>
           <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
           <div>
             <span className="font-semibold">검증 오류 {validationErrors.length}건:</span>{' '}
@@ -690,18 +690,24 @@ export default function MyTimesheet() {
           </div>
         </div>
       )}
-      {!isLoading && isSubmitted && (
-        <div className="rounded-lg px-4 py-2 flex items-center gap-2 text-[12px] mb-3" style={{ backgroundColor: 'var(--ok-bg)', border: '1px solid var(--ok)', color: 'var(--ok)' }}>
+      {!isLoading && validationErrors.length === 0 && !isSubmitted && timesheet && (
+        <div className="rounded-lg px-4 py-2 flex items-center gap-2 text-[12px] mb-3 flex-shrink-0" style={{ backgroundColor: 'var(--ok-bg)', border: '1px solid var(--ok)', color: 'var(--ok)' }}>
           <CheckCircle size={14} />
-          <span>제출 완료 — 읽기 전용 모드입니다.</span>
+          <span className="font-semibold">검증 정상 : 총 {monthlyTotals.grandTotal}h 투입</span>
+        </div>
+      )}
+      {!isLoading && isSubmitted && (
+        <div className="rounded-lg px-4 py-2 flex items-center gap-2 text-[12px] mb-3 flex-shrink-0" style={{ backgroundColor: 'var(--ok-bg)', border: '1px solid var(--ok)', color: 'var(--ok)' }}>
+          <CheckCircle size={14} />
+          <span>제출 완료 — 읽기 전용 모드입니다. (총 {monthlyTotals.grandTotal}h)</span>
         </div>
       )}
 
       {/* 그리드 카드 */}
       {!isLoading && (
         <div
-          className="bg-white rounded-lg border border-[var(--gray-border)] flex flex-col"
-          style={{ maxHeight: 'calc(100vh - 220px)', overflow: 'hidden' }}
+          className="bg-white rounded-lg border border-[var(--gray-border)] flex flex-col flex-1 min-h-0"
+          style={{ overflow: 'hidden' }}
         >
           {renderTable()}
         </div>

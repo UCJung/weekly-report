@@ -25,6 +25,7 @@
 | WORK-18-TASK-18 | 시간표 화면 레이아웃 통일 (카드 패턴) | TASK-17 | Done | — | |
 | WORK-18-TASK-19 | 종스크롤 복원 + 그리드 내부 툴바 제거/통합 | TASK-18 | Done | — | |
 | WORK-18-TASK-20 | 셀 UX 개선 (열 너비 통일 + 입력 선택/0값) | TASK-19 | Done | — | |
+| WORK-18-TASK-21 | 그리드 높이 꽉참 + 검증 정상 녹색 배너 | TASK-20 | Done | — | |
 
 ## Log
 - [2026-03-04] WORK-18-TASK-01 완료: Prisma 스키마 변경 (Position enum, 4 신규 모델, Member/Project 필드 추가), 마이그레이션, 시드 업데이트
