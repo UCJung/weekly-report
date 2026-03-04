@@ -9,6 +9,8 @@ interface SummaryCardProps {
   subText?: string;
   iconBg?: string;
   className?: string;
+  highlighted?: boolean;
+  onClick?: () => void;
 }
 
 export default function SummaryCard({
@@ -18,10 +20,18 @@ export default function SummaryCard({
   subText,
   iconBg = 'var(--primary-bg)',
   className,
+  highlighted,
+  onClick,
 }: SummaryCardProps) {
   return (
     <Card
-      className={cn('flex items-center gap-3 px-4 py-3.5', className)}
+      className={cn(
+        'flex items-center gap-3 px-4 py-3.5',
+        onClick && 'cursor-pointer transition-shadow hover:shadow-md',
+        highlighted && 'ring-2 ring-[var(--primary)]',
+        className,
+      )}
+      onClick={onClick}
     >
       {icon && (
         <div

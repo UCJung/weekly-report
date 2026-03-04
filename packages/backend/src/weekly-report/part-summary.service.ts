@@ -286,7 +286,15 @@ export class PartSummaryService {
       part: { id: part.id, name: part.name },
       summaryStatus: part.partSummaries[0]?.status ?? 'NOT_STARTED',
       members: part.members.map((member) => ({
-        member: { id: member.id, name: member.name, roles: member.roles },
+        member: {
+          id: member.id,
+          name: member.name,
+          roles: member.roles,
+          position: member.position,
+          jobTitle: member.jobTitle,
+          partId: part.id,
+          partName: part.name,
+        },
         report: member.weeklyReports[0] ?? null,
       })),
     }));

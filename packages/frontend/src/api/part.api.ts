@@ -2,7 +2,15 @@ import apiClient from './client';
 import { WorkItem } from './weekly-report.api';
 
 export interface MemberWeeklyStatus {
-  member: { id: string; name: string; roles: string[]; partId: string; partName: string };
+  member: {
+    id: string;
+    name: string;
+    roles: string[];
+    position?: string | null;
+    jobTitle?: string | null;
+    partId: string;
+    partName: string;
+  };
   report: {
     id: string;
     weekLabel: string;
