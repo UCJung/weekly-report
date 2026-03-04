@@ -52,6 +52,8 @@ function MonthlyView({ projectId, yearMonth }: MonthlyViewProps) {
     });
   };
 
+  const isApproved = data.members.length > 0 && data.members.some((m) => m.pmApproval != null);
+
   return (
     <div
       className="rounded-lg overflow-hidden"
@@ -61,15 +63,25 @@ function MonthlyView({ projectId, yearMonth }: MonthlyViewProps) {
         style={{ borderBottom: '1px solid var(--gray-border)', backgroundColor: 'var(--tbl-header)' }}
       >
         <h3 className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>인원별 투입현황</h3>
-        <button
-          onClick={handleApprove}
-          disabled={approveMutation.isPending || data.members.length === 0}
-          className="flex items-center gap-1 px-3 py-1.5 rounded text-[12px] font-medium text-white transition-colors disabled:opacity-50"
-          style={{ backgroundColor: 'var(--ok)' }}
-        >
-          <CheckCircle size={13} />
-          {approveMutation.isPending ? '처리 중...' : '월간 승인'}
-        </button>
+        {isApproved ? (
+          <span
+            className="flex items-center gap-1 px-3 py-1.5 text-[12px] font-medium"
+            style={{ color: 'var(--primary)' }}
+          >
+            <CheckCircle size={13} />
+            승인완료
+          </span>
+        ) : (
+          <button
+            onClick={handleApprove}
+            disabled={approveMutation.isPending || data.members.length === 0}
+            className="flex items-center gap-1 px-3 py-1.5 rounded text-[12px] font-medium text-white transition-colors disabled:opacity-50"
+            style={{ backgroundColor: 'var(--ok)' }}
+          >
+            <CheckCircle size={13} />
+            {approveMutation.isPending ? '처리 중...' : '월간 승인'}
+          </button>
+        )}
       </div>
 
       {data.members.length === 0 ? (
