@@ -41,6 +41,7 @@ model Part {
   teamMemberships TeamMembership[]
 
   @@unique([teamId, name])
+  @@index([teamId, sortOrder])
   @@map("parts")
 }
 
@@ -149,6 +150,7 @@ model TeamJoinRequest {
 
   @@index([memberId])
   @@index([teamId])
+  @@index([memberId, teamId, status])
   @@map("team_join_requests")
 }
 
@@ -171,6 +173,7 @@ model Project {
   summaryWorkItems  SummaryWorkItem[]
   timesheetWorkLogs TimesheetWorkLog[]
 
+  @@index([status])
   @@map("projects")
 }
 
@@ -271,6 +274,7 @@ model PartSummary {
 
   @@unique([partId, weekStart])
   @@index([weekStart])
+  @@index([teamId, weekStart])
   @@map("part_summaries")
 }
 
@@ -397,5 +401,6 @@ model TimesheetApproval {
   updatedAt DateTime @updatedAt
 
   @@unique([timesheetId, approvalType])
+  @@index([approverId, approvalType])
   @@map("timesheet_approvals")
 }
