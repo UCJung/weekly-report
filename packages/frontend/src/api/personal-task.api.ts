@@ -29,6 +29,7 @@ export interface PersonalTask {
   statusId: string;
   taskStatus: TaskStatusSnapshot;
   dueDate?: string;
+  scheduledDate?: string;
   sortOrder: number;
   linkedWeekLabel?: string;
   repeatConfig?: { type: string; dayOfWeek?: number; startDate?: string };
@@ -68,6 +69,7 @@ export interface CreatePersonalTaskDto {
   priority?: TaskPriority;
   statusId?: string;
   dueDate?: string;
+  scheduledDate?: string;
   repeatConfig?: { type: string; dayOfWeek?: number; startDate?: string };
 }
 
@@ -80,6 +82,7 @@ export interface UpdatePersonalTaskDto {
   status?: TaskStatus;
   statusId?: string;
   dueDate?: string | null;
+  scheduledDate?: string | null;
   repeatConfig?: { type: string; dayOfWeek?: number; startDate?: string } | null;
   elapsedMinutes?: number;
 }

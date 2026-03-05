@@ -298,6 +298,28 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             />
           </div>
 
+          {/* Scheduled date */}
+          <div>
+            <label style={labelStyle}>
+              <Calendar size={11} className="inline mr-1" />
+              예정일
+            </label>
+            <input
+              type="date"
+              value={task.scheduledDate ? task.scheduledDate.slice(0, 10) : ''}
+              onChange={(e) =>
+                updateMutation.mutate({
+                  id: task.id,
+                  dto: { scheduledDate: e.target.value || null },
+                })
+              }
+              style={{
+                ...selectStyle,
+                fontSize: '12.5px',
+              }}
+            />
+          </div>
+
           {/* 소요시간 — shown for IN_PROGRESS and COMPLETED */}
           {!!(isCompleted || isInProgress) && (
             <div>
