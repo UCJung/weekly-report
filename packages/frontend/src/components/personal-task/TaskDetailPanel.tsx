@@ -44,6 +44,69 @@ function combineDatetime(dateStr: string, timeStr: string): string | null {
   return new Date(`${dateStr}T${timeStr}:00`).toISOString();
 }
 
+/** 시/분(0·30) 셀렉트 기반 시간 입력 */
+function TimeSelect({
+  value,
+  onChange,
+  disabled,
+  selectStyle,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+  selectStyle: React.CSSProperties;
+}) {
+  const [h, m] = value ? value.split(':').map(Number) : [-1, -1];
+  const hasValue = value !== '';
+
+  const baseStyle: React.CSSProperties = {
+    ...selectStyle,
+    fontSize: '12.5px',
+    flex: 'none',
+    opacity: disabled ? 0.4 : 1,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+  };
+
+  const handleChange = (newH: number, newM: number) => {
+    onChange(`${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`);
+  };
+
+  return (
+    <div className="flex items-center gap-0.5">
+      <select
+        value={hasValue ? h : ''}
+        onChange={(e) => {
+          const newH = Number(e.target.value);
+          handleChange(newH, hasValue ? m : 0);
+        }}
+        disabled={disabled}
+        style={{ ...baseStyle, width: '52px' }}
+      >
+        {!hasValue && <option value="">--</option>}
+        {Array.from({ length: 24 }, (_, i) => (
+          <option key={i} value={i}>
+            {String(i).padStart(2, '0')}
+          </option>
+        ))}
+      </select>
+      <span style={{ color: 'var(--text-sub)', fontSize: '12px' }}>:</span>
+      <select
+        value={hasValue ? m : ''}
+        onChange={(e) => {
+          const newM = Number(e.target.value);
+          handleChange(hasValue ? h : 8, newM);
+        }}
+        disabled={disabled}
+        style={{ ...baseStyle, width: '48px' }}
+      >
+        {!hasValue && <option value="">--</option>}
+        <option value={0}>00</option>
+        <option value={30}>30</option>
+      </select>
+    </div>
+  );
+}
+
 interface TaskDetailPanelProps {
   task: PersonalTask;
   onClose: () => void;
@@ -323,60 +386,49 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             </select>
           </div>
 
-          {/* Due date */}
+          {/* Scheduled date (예정일시) — 순서 변경: 예정일시 먼저 */}
           <div>
             <label style={labelStyle}>
               <Calendar size={11} className="inline mr-1" />
-              마감일
+              예정일시
             </label>
             <div className="flex items-center gap-1.5">
               <input
                 type="date"
-                value={dueDateStr}
+                value={scheduledDateStr}
                 onChange={(e) => {
                   const newDate = e.target.value;
-                  setDueDateStr(newDate);
-                  // 날짜 지우기 → null 전달
+                  setScheduledDateStr(newDate);
                   updateMutation.mutate({
                     id: task.id,
-                    dto: { dueDate: combineDatetime(newDate, dueTimeStr) },
+                    dto: { scheduledDate: combineDatetime(newDate, scheduledTimeStr) },
                   });
                 }}
                 style={{ ...selectStyle, fontSize: '12.5px', flex: '1' }}
               />
-              <input
-                type="time"
-                step="1800"
-                value={dueTimeStr}
-                onChange={(e) => {
-                  const newTime = e.target.value;
-                  setDueTimeStr(newTime);
-                  if (dueDateStr) {
+              <TimeSelect
+                value={scheduledTimeStr}
+                onChange={(newTime) => {
+                  setScheduledTimeStr(newTime);
+                  if (scheduledDateStr) {
                     updateMutation.mutate({
                       id: task.id,
-                      dto: { dueDate: combineDatetime(dueDateStr, newTime) },
+                      dto: { scheduledDate: combineDatetime(scheduledDateStr, newTime) },
                     });
                   }
                 }}
-                disabled={!dueDateStr}
-                style={{
-                  ...selectStyle,
-                  fontSize: '12.5px',
-                  width: '100px',
-                  flex: 'none',
-                  opacity: dueDateStr ? 1 : 0.4,
-                  cursor: dueDateStr ? 'pointer' : 'not-allowed',
-                }}
+                disabled={!scheduledDateStr}
+                selectStyle={selectStyle}
               />
-              {dueTimeStr && (
+              {scheduledTimeStr && (
                 <button
                   title="시간 지우기"
                   onClick={() => {
-                    setDueTimeStr('');
-                    if (dueDateStr) {
+                    setScheduledTimeStr('');
+                    if (scheduledDateStr) {
                       updateMutation.mutate({
                         id: task.id,
-                        dto: { dueDate: dueDateStr },
+                        dto: { scheduledDate: scheduledDateStr },
                       });
                     }
                   }}
@@ -396,59 +448,49 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             </div>
           </div>
 
-          {/* Scheduled date */}
+          {/* Due date (마감일시) */}
           <div>
             <label style={labelStyle}>
               <Calendar size={11} className="inline mr-1" />
-              예정일
+              마감일시
             </label>
             <div className="flex items-center gap-1.5">
               <input
                 type="date"
-                value={scheduledDateStr}
+                value={dueDateStr}
                 onChange={(e) => {
                   const newDate = e.target.value;
-                  setScheduledDateStr(newDate);
+                  setDueDateStr(newDate);
                   updateMutation.mutate({
                     id: task.id,
-                    dto: { scheduledDate: combineDatetime(newDate, scheduledTimeStr) },
+                    dto: { dueDate: combineDatetime(newDate, dueTimeStr) },
                   });
                 }}
                 style={{ ...selectStyle, fontSize: '12.5px', flex: '1' }}
               />
-              <input
-                type="time"
-                step="1800"
-                value={scheduledTimeStr}
-                onChange={(e) => {
-                  const newTime = e.target.value;
-                  setScheduledTimeStr(newTime);
-                  if (scheduledDateStr) {
+              <TimeSelect
+                value={dueTimeStr}
+                onChange={(newTime) => {
+                  setDueTimeStr(newTime);
+                  if (dueDateStr) {
                     updateMutation.mutate({
                       id: task.id,
-                      dto: { scheduledDate: combineDatetime(scheduledDateStr, newTime) },
+                      dto: { dueDate: combineDatetime(dueDateStr, newTime) },
                     });
                   }
                 }}
-                disabled={!scheduledDateStr}
-                style={{
-                  ...selectStyle,
-                  fontSize: '12.5px',
-                  width: '100px',
-                  flex: 'none',
-                  opacity: scheduledDateStr ? 1 : 0.4,
-                  cursor: scheduledDateStr ? 'pointer' : 'not-allowed',
-                }}
+                disabled={!dueDateStr}
+                selectStyle={selectStyle}
               />
-              {scheduledTimeStr && (
+              {dueTimeStr && (
                 <button
                   title="시간 지우기"
                   onClick={() => {
-                    setScheduledTimeStr('');
-                    if (scheduledDateStr) {
+                    setDueTimeStr('');
+                    if (dueDateStr) {
                       updateMutation.mutate({
                         id: task.id,
-                        dto: { scheduledDate: scheduledDateStr },
+                        dto: { dueDate: dueDateStr },
                       });
                     }
                   }}

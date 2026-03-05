@@ -276,6 +276,9 @@ export default function WeeklyTimeGrid({
   // Capture original card dimensions for DragOverlay sizing
   const [activeDragRect, setActiveDragRect] = useState<{ width: number; height: number }>({ width: 120, height: 40 });
 
+  // Suppress card selection after drag/resize ends (prevents detail panel from opening)
+  const suppressClickRef = useRef(false);
+
   // Find the task being dragged (for overlay rendering)
   const activeTask = useMemo(() => {
     if (!activeDragId) return null;
@@ -284,6 +287,12 @@ export default function WeeklyTimeGrid({
     if (!taskIdMatch) return null;
     return tasks.find((t) => t.id === taskIdMatch[1]) ?? null;
   }, [activeDragId, tasks]);
+
+  // Wrapped select handler that ignores clicks right after drag/resize
+  const handleSelectTask = useCallback((task: PersonalTask) => {
+    if (suppressClickRef.current) return;
+    onSelectTask(task);
+  }, [onSelectTask]);
 
   // ── Resize state (native pointer events, NOT @dnd-kit) ────────────
   const [resizeState, setResizeState] = useState<{
@@ -311,6 +320,10 @@ export default function WeeklyTimeGrid({
     };
 
     const handlePointerUp = () => {
+      // Suppress card click after resize
+      suppressClickRef.current = true;
+      setTimeout(() => { suppressClickRef.current = false; }, 200);
+
       const state = resizeRef.current;
       if (!state || !onUpdateTask) {
         setResizeState(null);
@@ -436,6 +449,10 @@ export default function WeeklyTimeGrid({
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveDragId(null);
+
+    // Suppress card click after drag
+    suppressClickRef.current = true;
+    setTimeout(() => { suppressClickRef.current = false; }, 200);
 
     const { active, over, delta } = event;
     if (!onUpdateTask) return;
@@ -673,7 +690,7 @@ export default function WeeklyTimeGrid({
                             <WeeklyGridCard
                               task={task}
                               isSelected={selectedTaskId === task.id}
-                              onSelect={onSelectTask}
+                              onSelect={handleSelectTask}
                               showTime
                               showResizeHandles={!!onUpdateTask && isTimed}
                               onResizeStart={handleResizeStart}
@@ -715,7 +732,7 @@ export default function WeeklyTimeGrid({
                   key={task.id}
                   task={task}
                   isSelected={selectedTaskId === task.id}
-                  onSelect={onSelectTask}
+                  onSelect={handleSelectTask}
                 />
               ))
             )}
