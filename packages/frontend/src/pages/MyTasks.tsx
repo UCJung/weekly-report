@@ -46,12 +46,17 @@ export default function MyTasks() {
     setSelectedTask(null);
   };
 
-  const handleClickEmptyDate = (date: Date) => {
-    // Convert to local ISO date string (YYYY-MM-DD)
+  const handleClickEmptyDate = (date: Date, hour?: number) => {
+    // Convert to local ISO date string (YYYY-MM-DD or YYYY-MM-DDTHH:00)
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    setClickedScheduledDate(`${year}-${month}-${day}`);
+    if (hour !== undefined) {
+      const hh = String(hour).padStart(2, '0');
+      setClickedScheduledDate(`${year}-${month}-${day}T${hh}:00`);
+    } else {
+      setClickedScheduledDate(`${year}-${month}-${day}`);
+    }
   };
 
   const handleQuickInputDone = () => {
