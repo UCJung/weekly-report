@@ -18,6 +18,7 @@ import { TeamService } from './team.service';
 import { MemberService } from './member.service';
 import { TeamJoinService } from './team-join.service';
 import { TeamProjectService } from './team-project.service';
+import { TaskStatusService } from './task-status.service';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { ReorderPartsDto } from './dto/reorder-parts.dto';
@@ -28,6 +29,9 @@ import { ReviewJoinRequestDto } from './dto/review-join-request.dto';
 import { ListTeamsQueryDto } from './dto/list-teams-query.dto';
 import { AddTeamProjectsDto } from './dto/add-team-projects.dto';
 import { ReorderTeamProjectsDto } from './dto/reorder-team-projects.dto';
+import { CreateTaskStatusDto } from './dto/create-task-status.dto';
+import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
+import { ReorderTaskStatusesDto } from './dto/reorder-task-statuses.dto';
 
 @Controller('api/v1')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -37,6 +41,7 @@ export class TeamController {
     private memberService: MemberService,
     private teamJoinService: TeamJoinService,
     private teamProjectService: TeamProjectService,
+    private taskStatusService: TaskStatusService,
   ) {}
 
   // ── 팀 목록 (검색, 필터, 페이지네이션) ─────────────────────────────────────
@@ -181,5 +186,49 @@ export class TeamController {
     @Body() dto: ReorderTeamProjectsDto,
   ) {
     return this.teamProjectService.reorderTeamProjects(teamId, dto);
+  }
+
+  // ── 팀 작업 상태 정의 관리 ────────────────────────────────────────────────
+
+  @Get('teams/:teamId/task-statuses')
+  async getTaskStatuses(@Param('teamId') teamId: string) {
+    return this.taskStatusService.getByTeam(teamId);
+  }
+
+  @Post('teams/:teamId/task-statuses')
+  @Roles(MemberRole.LEADER)
+  async createTaskStatus(
+    @Param('teamId') teamId: string,
+    @Body() dto: CreateTaskStatusDto,
+  ) {
+    return this.taskStatusService.create(teamId, dto);
+  }
+
+  @Patch('teams/:teamId/task-statuses/reorder')
+  @Roles(MemberRole.LEADER)
+  async reorderTaskStatuses(
+    @Param('teamId') teamId: string,
+    @Body() dto: ReorderTaskStatusesDto,
+  ) {
+    return this.taskStatusService.reorder(teamId, dto);
+  }
+
+  @Patch('teams/:teamId/task-statuses/:id')
+  @Roles(MemberRole.LEADER)
+  async updateTaskStatus(
+    @Param('teamId') teamId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateTaskStatusDto,
+  ) {
+    return this.taskStatusService.update(teamId, id, dto);
+  }
+
+  @Delete('teams/:teamId/task-statuses/:id')
+  @Roles(MemberRole.LEADER)
+  async deleteTaskStatus(
+    @Param('teamId') teamId: string,
+    @Param('id') id: string,
+  ) {
+    return this.taskStatusService.delete(teamId, id);
   }
 }
