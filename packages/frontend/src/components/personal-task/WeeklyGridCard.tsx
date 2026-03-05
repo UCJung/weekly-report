@@ -11,6 +11,8 @@ interface WeeklyGridCardProps {
   showResizeHandles?: boolean;
   /** When true, renders without drag listeners (for DragOverlay preview) */
   isOverlay?: boolean;
+  /** Callback when resize starts via pointer down on a handle */
+  onResizeStart?: (taskId: string, type: 'top' | 'bottom', startY: number) => void;
 }
 
 const PRIORITY_BORDER_COLOR: Record<string, string> = {
@@ -31,71 +33,40 @@ function hasNonZeroTime(dateStr: string): boolean {
   return d.getHours() !== 0 || d.getMinutes() !== 0;
 }
 
-/** Resize handle at the top of the card */
-function ResizeTopHandle({ taskId }: { taskId: string }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `resize-top-${taskId}`,
-  });
+/** Resize handle — uses native pointer events (NOT @dnd-kit) */
+function ResizeHandle({
+  type,
+  onPointerDown,
+}: {
+  type: 'top' | 'bottom';
+  onPointerDown: (e: React.PointerEvent) => void;
+}) {
+  const isTop = type === 'top';
 
   return (
     <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
       style={{
         position: 'absolute',
-        top: 0,
+        [isTop ? 'top' : 'bottom']: 0,
         left: 0,
         right: 0,
-        height: 7,
-        cursor: 'n-resize',
-        backgroundColor: isDragging ? 'var(--primary)' : 'transparent',
-        borderRadius: '3px 3px 0 0',
+        height: 8,
+        cursor: isTop ? 'n-resize' : 's-resize',
+        backgroundColor: 'transparent',
+        borderRadius: isTop ? '3px 3px 0 0' : '0 0 3px 3px',
         zIndex: 2,
         transition: 'background-color 0.15s',
+      }}
+      onPointerDown={(e) => {
+        e.stopPropagation(); // prevent card drag from activating
+        e.preventDefault();
+        onPointerDown(e);
       }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--primary-bg)';
       }}
       onMouseLeave={(e) => {
-        if (!isDragging) {
-          (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent';
-        }
-      }}
-    />
-  );
-}
-
-/** Resize handle at the bottom of the card */
-function ResizeBottomHandle({ taskId }: { taskId: string }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `resize-bottom-${taskId}`,
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 7,
-        cursor: 's-resize',
-        backgroundColor: isDragging ? 'var(--primary)' : 'transparent',
-        borderRadius: '0 0 3px 3px',
-        zIndex: 2,
-        transition: 'background-color 0.15s',
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--primary-bg)';
-      }}
-      onMouseLeave={(e) => {
-        if (!isDragging) {
-          (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent';
-        }
+        (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent';
       }}
     />
   );
@@ -108,6 +79,7 @@ export default function WeeklyGridCard({
   showTime = false,
   showResizeHandles = false,
   isOverlay = false,
+  onResizeStart,
 }: WeeklyGridCardProps) {
   const isDone = task.taskStatus.category === 'COMPLETED';
   const borderColor = PRIORITY_BORDER_COLOR[task.priority] ?? 'var(--gray-border)';
@@ -127,6 +99,12 @@ export default function WeeklyGridCard({
     disabled: isOverlay,
   });
 
+  const handleResizePointerDown = (type: 'top' | 'bottom') => (e: React.PointerEvent) => {
+    if (onResizeStart) {
+      onResizeStart(task.id, type, e.clientY);
+    }
+  };
+
   return (
     <div
       ref={isOverlay ? undefined : setNodeRef}
@@ -139,6 +117,7 @@ export default function WeeklyGridCard({
         opacity: isDragging ? 0.4 : 1,
         position: 'relative',
         touchAction: 'none',
+        height: '100%',
       }}
       className="rounded transition-all w-full overflow-hidden"
       onClick={(e) => {
@@ -150,7 +129,9 @@ export default function WeeklyGridCard({
       role="button"
       tabIndex={0}
     >
-      {showResizeHandles && !isOverlay && <ResizeTopHandle taskId={task.id} />}
+      {showResizeHandles && !isOverlay && (
+        <ResizeHandle type="top" onPointerDown={handleResizePointerDown('top')} />
+      )}
 
       {/* Inner content area — drag listeners here only (separate from resize handles) */}
       <div
@@ -186,7 +167,9 @@ export default function WeeklyGridCard({
         )}
       </div>
 
-      {showResizeHandles && !isOverlay && <ResizeBottomHandle taskId={task.id} />}
+      {showResizeHandles && !isOverlay && (
+        <ResizeHandle type="bottom" onPointerDown={handleResizePointerDown('bottom')} />
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -257,16 +257,104 @@ export default function WeeklyTimeGrid({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
-  // Track the active drag id for DragOverlay
+  // Track the active drag id for DragOverlay (card moves only, not resize)
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
   // Find the task being dragged (for overlay rendering)
   const activeTask = useMemo(() => {
     if (!activeDragId) return null;
-    const taskIdMatch = activeDragId.match(/^(?:task-|resize-(?:top|bottom)-)(.+)$/);
+    // Only show overlay for card moves (task-{id}), not resize
+    const taskIdMatch = activeDragId.match(/^task-(.+)$/);
     if (!taskIdMatch) return null;
     return tasks.find((t) => t.id === taskIdMatch[1]) ?? null;
   }, [activeDragId, tasks]);
+
+  // ── Resize state (native pointer events, NOT @dnd-kit) ────────────
+  const [resizeState, setResizeState] = useState<{
+    taskId: string;
+    type: 'top' | 'bottom';
+    startY: number;
+    deltaY: number;
+  } | null>(null);
+
+  const resizeRef = useRef(resizeState);
+  resizeRef.current = resizeState;
+
+  const handleResizeStart = useCallback((taskId: string, type: 'top' | 'bottom', startY: number) => {
+    setResizeState({ taskId, type, startY, deltaY: 0 });
+  }, []);
+
+  // Global pointer move/up listeners for resize
+  useEffect(() => {
+    if (!resizeState) return;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      const state = resizeRef.current;
+      if (!state) return;
+      setResizeState({ ...state, deltaY: e.clientY - state.startY });
+    };
+
+    const handlePointerUp = () => {
+      const state = resizeRef.current;
+      if (!state || !onUpdateTask) {
+        setResizeState(null);
+        return;
+      }
+
+      const task = tasks.find((t) => t.id === state.taskId);
+      if (!task || !task.scheduledDate) {
+        setResizeState(null);
+        return;
+      }
+
+      const deltaSteps = Math.round(state.deltaY / HALF_ROW_PX);
+      if (deltaSteps !== 0) {
+        const scheduled = new Date(task.scheduledDate);
+
+        if (state.type === 'top') {
+          // Resize top → change scheduledDate
+          const currentMinutes = scheduled.getHours() * 60 + scheduled.getMinutes();
+          const newTotalMinutes = clampMinutes(currentMinutes + deltaSteps * 30);
+
+          // Constraint: scheduledDate must be < dueDate
+          let valid = true;
+          if (task.dueDate && hasTime(task.dueDate)) {
+            const dueMinutes = new Date(task.dueDate).getHours() * 60 + new Date(task.dueDate).getMinutes();
+            if (newTotalMinutes >= dueMinutes) valid = false;
+          }
+          if (valid) {
+            const newScheduled = new Date(scheduled);
+            newScheduled.setHours(Math.floor(newTotalMinutes / 60), newTotalMinutes % 60, 0, 0);
+            onUpdateTask(state.taskId, { scheduledDate: newScheduled.toISOString() });
+          }
+        } else {
+          // Resize bottom → change dueDate
+          const scheduledMinutes = scheduled.getHours() * 60 + scheduled.getMinutes();
+          const baseDue = task.dueDate && hasTime(task.dueDate)
+            ? new Date(task.dueDate)
+            : (() => { const d = new Date(scheduled); d.setMinutes(d.getMinutes() + 30); return d; })();
+
+          const currentDueMinutes = baseDue.getHours() * 60 + baseDue.getMinutes();
+          const newDueMinutes = clampMinutes(currentDueMinutes + deltaSteps * 30);
+
+          if (newDueMinutes > scheduledMinutes) {
+            const newDue = new Date(scheduled);
+            newDue.setHours(Math.floor(newDueMinutes / 60), newDueMinutes % 60, 0, 0);
+            onUpdateTask(state.taskId, { dueDate: newDue.toISOString() });
+          }
+        }
+      }
+
+      setResizeState(null);
+    };
+
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [resizeState !== null]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Build cell placement map: col -> rowStart -> tasks[]
   const cellMap = useMemo(() => {
@@ -379,62 +467,7 @@ export default function WeeklyTimeGrid({
       return;
     }
 
-    // ── Resize top (scheduledDate time change — 30min steps) ───────
-    if (activeId.startsWith('resize-top-')) {
-      const taskId = activeId.slice('resize-top-'.length);
-      const task = tasks.find((t) => t.id === taskId);
-      if (!task || !task.scheduledDate) return;
-
-      const deltaSteps = Math.round(delta.y / HALF_ROW_PX);
-      if (deltaSteps === 0) return;
-
-      const scheduled = new Date(task.scheduledDate);
-      const currentMinutes = scheduled.getHours() * 60 + scheduled.getMinutes();
-      const newTotalMinutes = clampMinutes(currentMinutes + deltaSteps * 30);
-
-      // Constraint: scheduledDate must be < dueDate (at least 30min gap)
-      if (task.dueDate && hasTime(task.dueDate)) {
-        const due = new Date(task.dueDate);
-        const dueMinutes = due.getHours() * 60 + due.getMinutes();
-        if (newTotalMinutes >= dueMinutes) return;
-      }
-
-      const newScheduled = new Date(scheduled);
-      newScheduled.setHours(Math.floor(newTotalMinutes / 60), newTotalMinutes % 60, 0, 0);
-
-      onUpdateTask(taskId, { scheduledDate: newScheduled.toISOString() });
-      return;
-    }
-
-    // ── Resize bottom (dueDate time change — 30min steps) ────────
-    if (activeId.startsWith('resize-bottom-')) {
-      const taskId = activeId.slice('resize-bottom-'.length);
-      const task = tasks.find((t) => t.id === taskId);
-      if (!task || !task.scheduledDate) return;
-
-      const deltaSteps = Math.round(delta.y / HALF_ROW_PX);
-      if (deltaSteps === 0) return;
-
-      const scheduled = new Date(task.scheduledDate);
-      const scheduledMinutes = scheduled.getHours() * 60 + scheduled.getMinutes();
-
-      // Current dueDate or scheduledDate + 30min as baseline
-      const baseDue = task.dueDate && hasTime(task.dueDate)
-        ? new Date(task.dueDate)
-        : (() => { const d = new Date(scheduled); d.setMinutes(d.getMinutes() + 30); return d; })();
-
-      const currentDueMinutes = baseDue.getHours() * 60 + baseDue.getMinutes();
-      const newDueMinutes = clampMinutes(currentDueMinutes + deltaSteps * 30);
-
-      // Constraint: dueDate must be at least scheduledDate + 30min
-      if (newDueMinutes <= scheduledMinutes) return;
-
-      const newDue = new Date(scheduled);
-      newDue.setHours(Math.floor(newDueMinutes / 60), newDueMinutes % 60, 0, 0);
-
-      onUpdateTask(taskId, { dueDate: newDue.toISOString() });
-      return;
-    }
+    // Resize is handled via native pointer events (not @dnd-kit)
   };
 
   return (
@@ -581,18 +614,33 @@ export default function WeeklyTimeGrid({
                         const placement = taskToCell(task, sunday, saturday);
                         if (!placement || placement.rowStart !== rowIndex) return null;
 
+                        const isTimed = task.scheduledDate != null && hasTime(task.scheduledDate);
+
+                        // Compute real-time height during resize
+                        let wrapperHeight = span * ROW_HEIGHT_PX - 8;
+                        let wrapperTop = 3;
+                        if (resizeState?.taskId === task.id) {
+                          if (resizeState.type === 'bottom') {
+                            wrapperHeight = Math.max(ROW_HEIGHT_PX / 2, wrapperHeight + resizeState.deltaY);
+                          } else {
+                            wrapperHeight = Math.max(ROW_HEIGHT_PX / 2, wrapperHeight - resizeState.deltaY);
+                            wrapperTop = 3 + resizeState.deltaY;
+                          }
+                        }
+
                         return (
                           <div
                             key={task.id}
                             style={
-                              span > 1
+                              isTimed
                                 ? {
                                     position: 'absolute',
-                                    top: 3,
+                                    top: wrapperTop,
                                     left: 3,
                                     right: 3,
-                                    height: `calc(${span * ROW_HEIGHT_PX}px - 8px)`,
-                                    zIndex: 1,
+                                    height: wrapperHeight,
+                                    zIndex: resizeState?.taskId === task.id ? 10 : 1,
+                                    transition: resizeState?.taskId === task.id ? 'none' : undefined,
                                   }
                                 : undefined
                             }
@@ -603,7 +651,8 @@ export default function WeeklyTimeGrid({
                               isSelected={selectedTaskId === task.id}
                               onSelect={onSelectTask}
                               showTime
-                              showResizeHandles={!!onUpdateTask && task.scheduledDate != null && hasTime(task.scheduledDate)}
+                              showResizeHandles={!!onUpdateTask && isTimed}
+                              onResizeStart={handleResizeStart}
                             />
                           </div>
                         );
