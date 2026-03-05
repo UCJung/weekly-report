@@ -14,7 +14,7 @@ interface TaskItemProps {
 }
 
 function isOverdue(task: PersonalTask): boolean {
-  if (!task.dueDate || task.status === 'DONE') return false;
+  if (!task.dueDate || task.taskStatus.category === 'COMPLETED') return false;
   return new Date(task.dueDate) < new Date();
 }
 
@@ -56,7 +56,7 @@ export default function TaskItem({ task, isSelected, onSelect, onToggleDone }: T
   };
 
   const overdue = isOverdue(task);
-  const isDone = task.status === 'DONE';
+  const isDone = task.taskStatus.category === 'COMPLETED';
 
   const priorityVariant = {
     HIGH: 'danger' as const,
@@ -137,6 +137,17 @@ export default function TaskItem({ task, isSelected, onSelect, onToggleDone }: T
           {formatElapsedTime(task.elapsedMinutes)}
         </span>
       )}
+
+      {/* Status badge */}
+      <span
+        className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+        style={{
+          backgroundColor: task.taskStatus.color + '22',
+          color: task.taskStatus.color,
+        }}
+      >
+        {task.taskStatus.name}
+      </span>
 
       {/* Project badge */}
       {task.project && (

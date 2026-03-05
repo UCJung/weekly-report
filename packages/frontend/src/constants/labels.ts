@@ -69,12 +69,20 @@ export const TIMESHEET_STATUS_VARIANT: Record<string, 'ok' | 'warn' | 'danger' |
   REJECTED: 'danger',
 };
 
+/**
+ * @deprecated PersonalTask.status 는 statusId + taskStatus 로 대체되었습니다.
+ * TaskStatusDef.name 을 직접 사용하세요.
+ */
 export const TASK_STATUS_LABEL: Record<string, string> = {
   TODO: '할일',
   IN_PROGRESS: '진행중',
   DONE: '완료',
 };
 
+/**
+ * @deprecated PersonalTask.status 는 statusId + taskStatus 로 대체되었습니다.
+ * TaskStatusDef.color 를 직접 사용하세요.
+ */
 export const TASK_STATUS_VARIANT: Record<string, 'ok' | 'warn' | 'danger' | 'gray'> = {
   TODO: 'gray',
   IN_PROGRESS: 'warn',

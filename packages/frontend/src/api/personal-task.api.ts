@@ -1,9 +1,20 @@
 import apiClient from './client';
+import { TaskStatusCategory } from './team.api';
 
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE';
 export type TaskPriority = 'HIGH' | 'MEDIUM' | 'LOW';
 export type TaskSortBy = 'dueDate' | 'priority' | 'createdAt' | 'project';
 export type TaskPeriod = 'today' | 'this-week' | 'this-month' | 'overdue';
+
+/** @deprecated status 필드는 taskStatus.category 로 대체되었습니다. */
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE';
+
+export interface TaskStatusSnapshot {
+  id: string;
+  name: string;
+  category: TaskStatusCategory;
+  color: string;
+  sortOrder: number;
+}
 
 export interface PersonalTask {
   id: string;
@@ -13,7 +24,10 @@ export interface PersonalTask {
   memo?: string;
   projectId?: string;
   priority: TaskPriority;
-  status: TaskStatus;
+  /** @deprecated status 필드는 statusId + taskStatus 로 대체되었습니다. */
+  status?: TaskStatus;
+  statusId: string;
+  taskStatus: TaskStatusSnapshot;
   dueDate?: string;
   sortOrder: number;
   linkedWeekLabel?: string;
@@ -35,7 +49,10 @@ export interface PersonalTaskSummary {
 
 export interface ListPersonalTasksParams {
   teamId: string;
+  /** @deprecated status 필드는 statusId/category 로 대체되었습니다. */
   status?: TaskStatus | 'ALL';
+  statusId?: string;
+  category?: TaskStatusCategory;
   projectId?: string;
   priority?: TaskPriority;
   period?: TaskPeriod;
@@ -49,6 +66,7 @@ export interface CreatePersonalTaskDto {
   memo?: string;
   projectId?: string;
   priority?: TaskPriority;
+  statusId?: string;
   dueDate?: string;
   repeatConfig?: { type: string; dayOfWeek?: number; startDate?: string };
 }
@@ -58,7 +76,9 @@ export interface UpdatePersonalTaskDto {
   memo?: string;
   projectId?: string | null;
   priority?: TaskPriority;
+  /** @deprecated status 필드는 statusId 로 대체되었습니다. */
   status?: TaskStatus;
+  statusId?: string;
   dueDate?: string | null;
   repeatConfig?: { type: string; dayOfWeek?: number; startDate?: string } | null;
   elapsedMinutes?: number;

@@ -18,14 +18,16 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
-import { PersonalTask, TaskStatus } from '../../api/personal-task.api';
+import { PersonalTask } from '../../api/personal-task.api';
 import {
   useToggleDonePersonalTask,
   useUpdatePersonalTask,
   useReorderPersonalTasks,
 } from '../../hooks/usePersonalTasks';
 import TaskKanbanCard from './TaskKanbanCard';
-import { TASK_STATUS_LABEL } from '../../constants/labels';
+import { useTaskStatuses } from '../../hooks/useTaskStatuses';
+import { useTeamStore } from '../../stores/teamStore';
+import { TaskStatusDef } from '../../api/team.api';
 
 interface TaskKanbanProps {
   tasks: PersonalTask[];
@@ -34,49 +36,57 @@ interface TaskKanbanProps {
   onSelectTask: (task: PersonalTask) => void;
 }
 
-interface ColumnConfig {
-  status: TaskStatus;
+// Derive header/column bg from status category
+function getColumnStyle(status: TaskStatusDef): {
   headerBg: string;
   headerColor: string;
   columnBg: string;
+} {
+  switch (status.category) {
+    case 'BEFORE_START':
+      return {
+        headerBg: 'var(--gray-light)',
+        headerColor: 'var(--text-sub)',
+        columnBg: 'var(--gray-light)',
+      };
+    case 'IN_PROGRESS':
+      return {
+        headerBg: 'var(--primary-bg)',
+        headerColor: 'var(--primary)',
+        columnBg: 'var(--primary-bg)',
+      };
+    case 'COMPLETED':
+      return {
+        headerBg: 'var(--ok-bg)',
+        headerColor: 'var(--ok)',
+        columnBg: 'var(--ok-bg)',
+      };
+    default:
+      return {
+        headerBg: 'var(--gray-light)',
+        headerColor: 'var(--text-sub)',
+        columnBg: 'var(--gray-light)',
+      };
+  }
 }
-
-const COLUMNS: ColumnConfig[] = [
-  {
-    status: 'TODO',
-    headerBg: 'var(--gray-light)',
-    headerColor: 'var(--text-sub)',
-    columnBg: 'var(--gray-light)',
-  },
-  {
-    status: 'IN_PROGRESS',
-    headerBg: 'var(--primary-bg)',
-    headerColor: 'var(--primary)',
-    columnBg: 'var(--primary-bg)',
-  },
-  {
-    status: 'DONE',
-    headerBg: 'var(--ok-bg)',
-    headerColor: 'var(--ok)',
-    columnBg: 'var(--ok-bg)',
-  },
-];
 
 // Droppable column container
 function KanbanColumn({
-  status,
+  statusDef,
   tasks,
-  config,
   selectedTaskId,
   onSelectTask,
 }: {
-  status: TaskStatus;
+  statusDef: TaskStatusDef;
   tasks: PersonalTask[];
-  config: ColumnConfig;
   selectedTaskId?: string;
   onSelectTask: (task: PersonalTask) => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `column-${status}` });
+  const { setNodeRef, isOver } = useDroppable({ id: `column-${statusDef.id}` });
+  const { headerBg, headerColor, columnBg } = getColumnStyle(statusDef);
+
+  // Use status custom color if provided (as accent for count badge)
+  const accentColor = statusDef.color || headerColor;
 
   return (
     <div
@@ -89,14 +99,21 @@ function KanbanColumn({
       {/* Column header */}
       <div
         className="flex items-center justify-between px-3 py-2.5"
-        style={{ backgroundColor: config.headerBg }}
+        style={{ backgroundColor: headerBg }}
       >
-        <span className="text-[13px] font-semibold" style={{ color: config.headerColor }}>
-          {TASK_STATUS_LABEL[status]}
-        </span>
+        <div className="flex items-center gap-1.5">
+          {/* Color dot from status definition */}
+          <span
+            className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+            style={{ backgroundColor: accentColor }}
+          />
+          <span className="text-[13px] font-semibold" style={{ color: headerColor }}>
+            {statusDef.name}
+          </span>
+        </div>
         <span
           className="text-[11px] font-bold px-1.5 py-0.5 rounded-full"
-          style={{ backgroundColor: config.headerColor + '22', color: config.headerColor }}
+          style={{ backgroundColor: accentColor + '22', color: accentColor }}
         >
           {tasks.length}
         </span>
@@ -107,7 +124,7 @@ function KanbanColumn({
         ref={setNodeRef}
         className="flex flex-col gap-2 p-2 flex-1 overflow-y-auto transition-colors"
         style={{
-          backgroundColor: isOver ? config.headerBg : config.columnBg,
+          backgroundColor: isOver ? headerBg : columnBg,
           minHeight: 300,
         }}
       >
@@ -148,6 +165,9 @@ export default function TaskKanban({
   selectedTaskId,
   onSelectTask,
 }: TaskKanbanProps) {
+  const { currentTeamId } = useTeamStore();
+  const { data: statusDefs = [] } = useTaskStatuses(currentTeamId ?? '');
+
   const [activeId, setActiveId] = useState<string | null>(null);
   const [localTasks, setLocalTasks] = useState<PersonalTask[]>([]);
 
@@ -169,32 +189,25 @@ export default function TaskKanban({
 
   const displayTasks = activeId ? localTasks : tasks;
 
-  const todoTasks = displayTasks.filter((t) => t.status === 'TODO');
-  const inProgressTasks = displayTasks.filter((t) => t.status === 'IN_PROGRESS');
-  const doneTasks = displayTasks.filter((t) => t.status === 'DONE');
+  const getColumnTasks = (statusId: string) =>
+    displayTasks.filter((t) => t.statusId === statusId);
 
-  const getColumnTasks = (status: TaskStatus) => {
-    if (status === 'TODO') return todoTasks;
-    if (status === 'IN_PROGRESS') return inProgressTasks;
-    return doneTasks;
-  };
+  const getTaskStatusId = (taskId: string): string | undefined =>
+    displayTasks.find((t) => t.id === taskId)?.statusId;
 
-  const getTaskStatus = (taskId: string): TaskStatus | undefined =>
-    displayTasks.find((t) => t.id === taskId)?.status;
-
-  // Detect which column an item is being dragged over
-  const getOverStatus = (event: DragOverEvent): TaskStatus | null => {
+  // Detect which column statusId an item is being dragged over
+  const getOverStatusId = (event: DragOverEvent): string | null => {
     const overId = event.over?.id as string | undefined;
     if (!overId) return null;
 
     // Over a column droppable
     if (overId.startsWith('column-')) {
-      return overId.replace('column-', '') as TaskStatus;
+      return overId.replace('column-', '');
     }
 
-    // Over another card — use that card's status
+    // Over another card — use that card's statusId
     const overTask = displayTasks.find((t) => t.id === overId);
-    return overTask?.status ?? null;
+    return overTask?.statusId ?? null;
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -204,15 +217,22 @@ export default function TaskKanban({
 
   const handleDragOver = (event: DragOverEvent) => {
     const activeTaskId = event.active.id as string;
-    const overStatus = getOverStatus(event);
-    if (!overStatus) return;
+    const overStatusId = getOverStatusId(event);
+    if (!overStatusId) return;
 
-    const activeStatus = getTaskStatus(activeTaskId);
-    if (!activeStatus || activeStatus === overStatus) return;
+    const activeStatusId = getTaskStatusId(activeTaskId);
+    if (!activeStatusId || activeStatusId === overStatusId) return;
+
+    const newStatusDef = statusDefs.find((s) => s.id === overStatusId);
+    if (!newStatusDef) return;
 
     // Move card to new column optimistically
     setLocalTasks((prev) =>
-      prev.map((t) => (t.id === activeTaskId ? { ...t, status: overStatus } : t)),
+      prev.map((t) =>
+        t.id === activeTaskId
+          ? { ...t, statusId: overStatusId, taskStatus: { ...newStatusDef } }
+          : t,
+      ),
     );
   };
 
@@ -228,41 +248,40 @@ export default function TaskKanban({
     const activeTask = tasks.find((t) => t.id === activeTaskId);
     if (!activeTask) return;
 
-    // Determine new status
-    let newStatus: TaskStatus | null = null;
+    // Determine new statusId
+    let newStatusId: string | null = null;
     if (overId.startsWith('column-')) {
-      newStatus = overId.replace('column-', '') as TaskStatus;
+      newStatusId = overId.replace('column-', '');
     } else {
       const overTask = localTasks.find((t) => t.id === overId);
-      newStatus = overTask?.status ?? null;
+      newStatusId = overTask?.statusId ?? null;
     }
 
-    if (!newStatus) return;
+    if (!newStatusId) return;
 
-    const oldStatus = activeTask.status;
+    const oldStatusId = activeTask.statusId;
 
-    if (newStatus !== oldStatus) {
-      // Cross-column move → update status via API
-      if (newStatus === 'DONE') {
-        // Use toggleDone to set to DONE (if not already)
-        if (activeTask.status !== 'DONE') {
-          toggleMutation.mutate(activeTaskId);
-        }
-      } else if (oldStatus === 'DONE') {
-        // Undo done
+    if (newStatusId !== oldStatusId) {
+      const newStatusDef = statusDefs.find((s) => s.id === newStatusId);
+      const oldStatusDef = statusDefs.find((s) => s.id === oldStatusId);
+
+      // Toggle-done logic: use toggleDone if crossing COMPLETED boundary
+      const isMovingToCompleted = newStatusDef?.category === 'COMPLETED';
+      const isMovingFromCompleted = oldStatusDef?.category === 'COMPLETED';
+
+      if (isMovingToCompleted && !isMovingFromCompleted) {
+        toggleMutation.mutate(activeTaskId);
+      } else if (isMovingFromCompleted && !isMovingToCompleted) {
         toggleMutation.mutate(activeTaskId);
       } else {
-        // TODO ↔ IN_PROGRESS
         updateMutation.mutate({
           id: activeTaskId,
-          dto: {
-            status: newStatus,
-          },
+          dto: { statusId: newStatusId },
         });
       }
     } else {
       // Same column: reorder
-      const columnTasks = localTasks.filter((t) => t.status === newStatus);
+      const columnTasks = localTasks.filter((t) => t.statusId === newStatusId);
       const oldIndex = columnTasks.findIndex((t) => t.id === activeTaskId);
       const newIndex = columnTasks.findIndex((t) => t.id === overId);
 
@@ -300,12 +319,11 @@ export default function TaskKanban({
       onDragEnd={handleDragEnd}
     >
       <div className="flex gap-3 h-full overflow-x-auto pb-2">
-        {COLUMNS.map((col) => (
+        {statusDefs.map((statusDef) => (
           <KanbanColumn
-            key={col.status}
-            status={col.status}
-            tasks={getColumnTasks(col.status)}
-            config={col}
+            key={statusDef.id}
+            statusDef={statusDef}
+            tasks={getColumnTasks(statusDef.id)}
             selectedTaskId={selectedTaskId}
             onSelectTask={onSelectTask}
           />

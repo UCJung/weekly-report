@@ -34,7 +34,7 @@ function formatDueDate(dueDate: string): string {
 }
 
 function isOverdue(task: PersonalTask): boolean {
-  if (!task.dueDate || task.status === 'DONE') return false;
+  if (!task.dueDate || task.taskStatus.category === 'COMPLETED') return false;
   return new Date(task.dueDate) < new Date();
 }
 
@@ -66,7 +66,7 @@ export default function TaskKanbanCard({
     zIndex: isDragging ? 50 : undefined,
   };
 
-  const isDone = task.status === 'DONE';
+  const isDone = task.taskStatus.category === 'COMPLETED';
   const overdue = isOverdue(task);
   const priorityVariant = TASK_PRIORITY_VARIANT[task.priority];
   const borderColor = PRIORITY_BORDER_COLOR[task.priority] ?? 'var(--gray-border)';
@@ -117,6 +117,17 @@ export default function TaskKanbanCard({
       {/* Badges row */}
       {!compact && (
         <div className="flex flex-wrap items-center gap-1 mt-1.5">
+          {/* Status badge with custom color */}
+          <span
+            className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+            style={{
+              backgroundColor: task.taskStatus.color + '22',
+              color: task.taskStatus.color,
+            }}
+          >
+            {task.taskStatus.name}
+          </span>
+
           {/* Project badge */}
           {task.project && (
             <Badge variant="purple" className="max-w-[90px] truncate">
@@ -129,7 +140,7 @@ export default function TaskKanbanCard({
             {TASK_PRIORITY_LABEL[task.priority]}
           </Badge>
 
-          {/* Elapsed time badge (DONE) */}
+          {/* Elapsed time badge (COMPLETED) */}
           {isDone && task.elapsedMinutes != null && (
             <span
               className="text-[10px] px-1.5 py-0.5 rounded"

@@ -63,6 +63,8 @@ export function useUpdatePersonalTask() {
           // null → undefined for projectId/dueDate to match PersonalTask type
           if (updated.projectId === null) updated.projectId = undefined;
           if (updated.dueDate === null) updated.dueDate = undefined;
+          // statusId change: clear taskStatus optimistically (will be refreshed on settle)
+          // The server response will bring the correct taskStatus object
           return updated as PersonalTask;
         });
       });
@@ -106,11 +108,16 @@ export function useToggleDonePersonalTask() {
         if (!old) return old;
         return old.map((task) => {
           if (task.id !== id) return task;
-          const newStatus = task.status === 'DONE' ? 'TODO' : 'DONE';
+          // Toggle category between COMPLETED and BEFORE_START optimistically
+          const isCurrentlyDone = task.taskStatus.category === 'COMPLETED';
+          const newCategory = isCurrentlyDone ? 'BEFORE_START' : 'COMPLETED';
           return {
             ...task,
-            status: newStatus,
-            completedAt: newStatus === 'DONE' ? new Date().toISOString() : undefined,
+            taskStatus: {
+              ...task.taskStatus,
+              category: newCategory,
+            },
+            completedAt: !isCurrentlyDone ? new Date().toISOString() : undefined,
           };
         });
       });

@@ -33,7 +33,14 @@ function makeTask(overrides: Partial<PersonalTask> = {}): PersonalTask {
     teamId: 'team-1',
     title: '테스트 작업 제목',
     priority: 'MEDIUM',
-    status: 'TODO',
+    statusId: 'status-todo',
+    taskStatus: {
+      id: 'status-todo',
+      name: '할일',
+      category: 'BEFORE_START',
+      color: '#6B5CE7',
+      sortOrder: 1,
+    },
     sortOrder: 0,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -115,7 +122,7 @@ describe('TaskItem', () => {
     yesterday.setDate(yesterday.getDate() - 1);
 
     const task = makeTask({
-      status: 'TODO',
+      taskStatus: { id: 'status-todo', name: '할일', category: 'BEFORE_START', color: '#6B5CE7', sortOrder: 1 },
       dueDate: yesterday.toISOString(),
     });
     const { container } = render(
@@ -137,7 +144,9 @@ describe('TaskItem', () => {
   // ──────────────────────────────────────────────
 
   test('renders strikethrough title and checked checkbox when DONE', () => {
-    const task = makeTask({ status: 'DONE' });
+    const task = makeTask({
+      taskStatus: { id: 'status-done', name: '완료', category: 'COMPLETED', color: '#27AE60', sortOrder: 3 },
+    });
     const { container } = render(
       <TaskItem
         task={task}
@@ -161,7 +170,9 @@ describe('TaskItem', () => {
   // ──────────────────────────────────────────────
 
   test('renders normal title and unchecked checkbox when TODO', () => {
-    const task = makeTask({ status: 'TODO' });
+    const task = makeTask({
+      taskStatus: { id: 'status-todo', name: '할일', category: 'BEFORE_START', color: '#6B5CE7', sortOrder: 1 },
+    });
     const { container } = render(
       <TaskItem
         task={task}
@@ -230,7 +241,7 @@ describe('TaskItem', () => {
     yesterday.setDate(yesterday.getDate() - 1);
 
     const task = makeTask({
-      status: 'DONE',
+      taskStatus: { id: 'status-done', name: '완료', category: 'COMPLETED', color: '#27AE60', sortOrder: 3 },
       dueDate: yesterday.toISOString(),
     });
     const { container } = render(

@@ -38,8 +38,8 @@ export default function TaskList({ tasks, isLoading, selectedTaskId, onSelectTas
     }),
   );
 
-  const activeTasks = tasks.filter((t) => t.status !== 'DONE');
-  const doneTasks = tasks.filter((t) => t.status === 'DONE');
+  const activeTasks = tasks.filter((t) => t.taskStatus.category !== 'COMPLETED');
+  const doneTasks = tasks.filter((t) => t.taskStatus.category === 'COMPLETED');
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;

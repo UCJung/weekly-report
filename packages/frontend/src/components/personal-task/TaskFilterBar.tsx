@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
-import { TaskStatus, TaskPriority, TaskSortBy, TaskPeriod } from '../../api/personal-task.api';
+import { TaskPriority, TaskSortBy, TaskPeriod } from '../../api/personal-task.api';
 import { useTeamStore } from '../../stores/teamStore';
 import { useTeamProjects } from '../../hooks/useProjects';
+import { useTaskStatuses } from '../../hooks/useTaskStatuses';
 
 export interface TaskFilters {
-  status?: TaskStatus | 'ALL';
+  statusId?: string | 'ALL';
   period?: TaskPeriod;
   projectId?: string;
   priority?: TaskPriority;
@@ -17,13 +18,6 @@ interface TaskFilterBarProps {
   filters: TaskFilters;
   onChange: (filters: TaskFilters) => void;
 }
-
-const STATUS_OPTIONS: { value: TaskStatus | 'ALL'; label: string }[] = [
-  { value: 'ALL', label: '전체' },
-  { value: 'TODO', label: '할일' },
-  { value: 'IN_PROGRESS', label: '진행중' },
-  { value: 'DONE', label: '완료' },
-];
 
 const PERIOD_OPTIONS: { value: TaskPeriod | ''; label: string }[] = [
   { value: '', label: '전체 기간' },
@@ -49,6 +43,7 @@ const SORT_OPTIONS: { value: TaskSortBy; label: string }[] = [
 export default function TaskFilterBar({ filters, onChange }: TaskFilterBarProps) {
   const { currentTeamId } = useTeamStore();
   const { data: teamProjects } = useTeamProjects(currentTeamId ?? '');
+  const { data: statusDefs = [] } = useTaskStatuses(currentTeamId ?? '');
   const [searchValue, setSearchValue] = useState(filters.q ?? '');
 
   // Debounce search
@@ -72,6 +67,8 @@ export default function TaskFilterBar({ filters, onChange }: TaskFilterBarProps)
     cursor: 'pointer',
   };
 
+  const currentStatusId = filters.statusId ?? 'ALL';
+
   return (
     <div
       className="flex flex-wrap items-center gap-2 px-4 py-2.5 rounded-lg border"
@@ -80,25 +77,39 @@ export default function TaskFilterBar({ filters, onChange }: TaskFilterBarProps)
         borderColor: 'var(--gray-border)',
       }}
     >
-      {/* Status filter tabs */}
+      {/* Status filter tabs — dynamic from team TaskStatusDef */}
       <div
         className="flex items-center rounded-md overflow-hidden border"
         style={{ borderColor: 'var(--gray-border)' }}
       >
-        {STATUS_OPTIONS.map((opt) => {
-          const isActive = (filters.status ?? 'ALL') === opt.value;
+        {/* All tab */}
+        <button
+          onClick={() => onChange({ ...filters, statusId: 'ALL' })}
+          className="px-3 py-1 text-[12px] font-medium transition-colors"
+          style={{
+            backgroundColor: currentStatusId === 'ALL' ? 'var(--primary)' : 'var(--white)',
+            color: currentStatusId === 'ALL' ? 'var(--white)' : 'var(--text-sub)',
+            borderRight: '1px solid var(--gray-border)',
+          }}
+        >
+          전체
+        </button>
+
+        {/* Dynamic status tabs */}
+        {statusDefs.map((statusDef) => {
+          const isActive = currentStatusId === statusDef.id;
           return (
             <button
-              key={opt.value}
-              onClick={() => onChange({ ...filters, status: opt.value })}
+              key={statusDef.id}
+              onClick={() => onChange({ ...filters, statusId: statusDef.id })}
               className="px-3 py-1 text-[12px] font-medium transition-colors"
               style={{
-                backgroundColor: isActive ? 'var(--primary)' : 'var(--white)',
+                backgroundColor: isActive ? statusDef.color : 'var(--white)',
                 color: isActive ? 'var(--white)' : 'var(--text-sub)',
                 borderRight: '1px solid var(--gray-border)',
               }}
             >
-              {opt.label}
+              {statusDef.name}
             </button>
           );
         })}

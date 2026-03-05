@@ -17,13 +17,13 @@ export default function MyTasks() {
   const [selectedTask, setSelectedTask] = useState<PersonalTask | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [filters, setFilters] = useState<TaskFilters>({
-    status: 'ALL',
+    statusId: 'ALL',
     sortBy: 'dueDate',
   });
 
   const { data: tasks = [], isLoading } = usePersonalTasks({
     teamId: currentTeamId ?? '',
-    status: filters.status,
+    statusId: filters.statusId === 'ALL' ? undefined : filters.statusId,
     period: filters.period,
     projectId: filters.projectId,
     priority: filters.priority,
@@ -45,7 +45,8 @@ export default function MyTasks() {
     setSelectedTask(null);
   };
 
-  const incompleteTasks = tasks.filter((t) => t.status !== 'DONE');
+  // Count tasks that are not in COMPLETED category
+  const incompleteTasks = tasks.filter((t) => t.taskStatus.category !== 'COMPLETED');
   const totalCount = tasks.length;
 
   if (!currentTeamId) {

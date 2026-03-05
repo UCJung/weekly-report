@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Trash2, Calendar, Tag, AlertCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
-import { PersonalTask, TaskStatus, TaskPriority } from '../../api/personal-task.api';
+import { PersonalTask, TaskPriority } from '../../api/personal-task.api';
 import {
   useUpdatePersonalTask,
   useDeletePersonalTask,
 } from '../../hooks/usePersonalTasks';
 import { useTeamProjects } from '../../hooks/useProjects';
 import { useTeamStore } from '../../stores/teamStore';
+import { useTaskStatuses } from '../../hooks/useTaskStatuses';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import {
-  TASK_STATUS_LABEL,
   TASK_PRIORITY_LABEL,
   TASK_PRIORITY_VARIANT,
 } from '../../constants/labels';
@@ -30,6 +30,7 @@ const REPEAT_TYPE_LABEL: Record<string, string> = {
 export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
   const { currentTeamId } = useTeamStore();
   const { data: teamProjects } = useTeamProjects(currentTeamId ?? '');
+  const { data: statusDefs = [] } = useTaskStatuses(currentTeamId ?? '');
   const updateMutation = useUpdatePersonalTask();
   const deleteMutation = useDeletePersonalTask();
 
@@ -82,10 +83,6 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     }, 500);
   };
 
-  const handleFieldChange = (field: keyof PersonalTask, value: unknown) => {
-    updateMutation.mutate({ id: task.id, dto: { [field]: value } });
-  };
-
   const handleElapsedSave = () => {
     const totalMinutes = elapsedHours * 60 + elapsedMins;
     updateMutation.mutate({ id: task.id, dto: { elapsedMinutes: totalMinutes } });
@@ -130,6 +127,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     display: 'block',
   };
 
+  const isCompleted = task.taskStatus.category === 'COMPLETED';
+  const isInProgress = task.taskStatus.category === 'IN_PROGRESS';
+
   return (
     <>
       {/* Backdrop */}
@@ -158,8 +158,15 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <Badge variant={TASK_PRIORITY_VARIANT[task.priority]}>
               {TASK_PRIORITY_LABEL[task.priority]}
             </Badge>
-            <span className="text-[11px]" style={{ color: 'var(--text-sub)' }}>
-              {TASK_STATUS_LABEL[task.status]}
+            {/* Status indicator with dynamic color */}
+            <span
+              className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+              style={{
+                backgroundColor: task.taskStatus.color + '22',
+                color: task.taskStatus.color,
+              }}
+            >
+              {task.taskStatus.name}
             </span>
           </div>
           <button
@@ -207,17 +214,21 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             )}
           </div>
 
-          {/* Status */}
+          {/* Status — dynamic select from team TaskStatusDef */}
           <div>
             <label style={labelStyle}>상태</label>
             <select
-              value={task.status}
-              onChange={(e) => handleFieldChange('status', e.target.value as TaskStatus)}
+              value={task.statusId}
+              onChange={(e) =>
+                updateMutation.mutate({ id: task.id, dto: { statusId: e.target.value } })
+              }
               style={selectStyle}
             >
-              <option value="TODO">할일</option>
-              <option value="IN_PROGRESS">진행중</option>
-              <option value="DONE">완료</option>
+              {statusDefs.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -226,7 +237,12 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <label style={labelStyle}>우선순위</label>
             <select
               value={task.priority}
-              onChange={(e) => handleFieldChange('priority', e.target.value as TaskPriority)}
+              onChange={(e) =>
+                updateMutation.mutate({
+                  id: task.id,
+                  dto: { priority: e.target.value as TaskPriority },
+                })
+              }
               style={selectStyle}
             >
               <option value="HIGH">높음</option>
@@ -244,7 +260,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <select
               value={task.projectId ?? ''}
               onChange={(e) =>
-                handleFieldChange('projectId', e.target.value || null)
+                updateMutation.mutate({
+                  id: task.id,
+                  dto: { projectId: e.target.value || null },
+                })
               }
               style={selectStyle}
             >
@@ -267,7 +286,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               type="date"
               value={task.dueDate ? task.dueDate.slice(0, 10) : ''}
               onChange={(e) =>
-                handleFieldChange('dueDate', e.target.value || null)
+                updateMutation.mutate({
+                  id: task.id,
+                  dto: { dueDate: e.target.value || null },
+                })
               }
               style={{
                 ...selectStyle,
@@ -276,14 +298,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             />
           </div>
 
-          {/* 소요시간 */}
-          {task.status !== 'TODO' && (
+          {/* 소요시간 — shown for IN_PROGRESS and COMPLETED */}
+          {!!(isCompleted || isInProgress) && (
             <div>
               <label style={labelStyle}>
                 <Clock size={11} className="inline mr-1" />
                 소요시간
               </label>
-              {task.status === 'DONE' ? (
+              {isCompleted ? (
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
@@ -319,7 +341,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   />
                   <span className="text-[12.5px]" style={{ color: 'var(--text-sub)' }}>분</span>
                 </div>
-              ) : task.status === 'IN_PROGRESS' && task.startedAt ? (
+              ) : isInProgress && task.startedAt ? (
                 <div className="text-[12.5px]" style={{ color: 'var(--text-sub)' }}>
                   진행 중 (시작: {formatStartedAt(task.startedAt)})
                 </div>

@@ -28,17 +28,17 @@ export default function ImportFromTasksModal({
 
   const { data: doneTasks = [], isLoading: isDoneLoading } = usePersonalTasks({
     teamId,
-    status: 'DONE',
+    category: 'COMPLETED',
   });
 
   const { data: inProgressTasks = [], isLoading: isInProgressLoading } = usePersonalTasks({
     teamId,
-    status: 'IN_PROGRESS',
+    category: 'IN_PROGRESS',
   });
 
   const { data: todoTasks = [], isLoading: isTodoLoading } = usePersonalTasks({
     teamId,
-    status: 'TODO',
+    category: 'BEFORE_START',
   });
 
   const todoAndInProgress = [...inProgressTasks, ...todoTasks];
@@ -92,7 +92,7 @@ export default function ImportFromTasksModal({
   };
 
   const isOverdue = (task: PersonalTask) => {
-    if (!task.dueDate || task.status === 'DONE') return false;
+    if (!task.dueDate || task.taskStatus.category === 'COMPLETED') return false;
     return new Date(task.dueDate) < new Date();
   };
 
@@ -216,8 +216,8 @@ export default function ImportFromTasksModal({
                   <p
                     className="text-[12.5px] truncate"
                     style={{
-                      color: task.status === 'DONE' ? 'var(--text-sub)' : 'var(--text)',
-                      textDecoration: task.status === 'DONE' ? 'line-through' : 'none',
+                      color: task.taskStatus.category === 'COMPLETED' ? 'var(--text-sub)' : 'var(--text)',
+                      textDecoration: task.taskStatus.category === 'COMPLETED' ? 'line-through' : 'none',
                     }}
                   >
                     {task.title}

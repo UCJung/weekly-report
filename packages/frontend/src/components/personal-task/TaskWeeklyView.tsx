@@ -64,7 +64,7 @@ export default function TaskWeeklyView({
     const cols: PersonalTask[][] = Array.from({ length: 8 }, () => []);
 
     for (const task of tasks) {
-      if (task.status === 'DONE' && task.completedAt) {
+      if (task.taskStatus.category === 'COMPLETED' && task.completedAt) {
         const completedDate = new Date(task.completedAt);
         completedDate.setHours(0, 0, 0, 0);
         // Within this week?
@@ -73,7 +73,7 @@ export default function TaskWeeklyView({
           cols[dayIndex].push(task);
         }
         // else: out of range, don't show
-      } else if (task.status === 'IN_PROGRESS' && task.startedAt) {
+      } else if (task.taskStatus.category === 'IN_PROGRESS' && task.startedAt) {
         const startedDate = new Date(task.startedAt);
         startedDate.setHours(0, 0, 0, 0);
         if (startedDate >= sunday && startedDate <= saturday) {
@@ -85,7 +85,7 @@ export default function TaskWeeklyView({
           cols[7].push(task);
         }
       } else {
-        // TODO → 예정업무
+        // BEFORE_START or unknown → 예정업무
         cols[7].push(task);
       }
     }
