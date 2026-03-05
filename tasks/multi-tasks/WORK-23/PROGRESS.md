@@ -6,7 +6,7 @@
 | TASK | Title | Depends | Status | Commit | Note |
 |------|-------|---------|--------|--------|------|
 | WORK-23-TASK-01 | DB 스키마 변경 + Prisma 마이그레이션 | — | Done | 03afc21 | |
-| WORK-23-TASK-02 | 백엔드 CRUD + 상태 전환 API | TASK-01 | Done | | |
+| WORK-23-TASK-02 | 백엔드 CRUD + 상태 전환 API | TASK-01 | Done | 54c76d0 | |
 | WORK-23-TASK-03 | 백엔드 주간업무 연동 + 요약 API | TASK-02 | Pending | | |
 | WORK-23-TASK-04 | 프론트엔드 내 작업 페이지 | TASK-02 | Pending | | |
 | WORK-23-TASK-05 | 프론트엔드 연동 + 위젯 + 사이드바 | TASK-03, TASK-04 | Pending | | |
