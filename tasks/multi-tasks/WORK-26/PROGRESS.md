@@ -17,4 +17,4 @@
 - 2026-03-05: TASK-00 완료 — PersonalTask dueDate/scheduledDate 마이그레이션
 - 2026-03-05: TASK-01 완료 — 백엔드 DTO/Service datetime 처리 검증 + 테스트 추가 (5584b19)
 - 2026-03-05: TASK-02 완료 — 주간뷰 CSS Grid 시간 그리드 구현 (WeeklyTimeGrid, WeeklyGridCard)
-- 2026-03-05: TASK-03 완료 — 프론트엔드 API 타입 + 날짜+시간 입력 UI (a8b3c0f)
+- 2026-03-05: TASK-03 완료 — 프론트엔드 API 타입 + 날짜+시간 입력 UI (a0ce784)
