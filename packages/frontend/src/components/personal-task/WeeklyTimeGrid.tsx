@@ -26,29 +26,41 @@ interface WeeklyTimeGridProps {
 
 const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
 
-// Row 0 = header, Row 1 = 종일, Row 2 = ~07:59, Row 3..13 = 08:00~18:00, Row 14 = 19:00~
-const TIME_ROWS: { label: string; rowIndex: number }[] = [
+// Row 0 = header, Row 1 = 종일, Row 2 = ~07:59,
+// Row 3..24 = 08:00~18:30 (30-min intervals), Row 25 = 19:00~
+const TIME_ROWS: { label: string; rowIndex: number; isHalf?: boolean }[] = [
   { label: '종일', rowIndex: 1 },
   { label: '~07:59', rowIndex: 2 },
   { label: '08:00', rowIndex: 3 },
-  { label: '09:00', rowIndex: 4 },
-  { label: '10:00', rowIndex: 5 },
-  { label: '11:00', rowIndex: 6 },
-  { label: '12:00', rowIndex: 7 },
-  { label: '13:00', rowIndex: 8 },
-  { label: '14:00', rowIndex: 9 },
-  { label: '15:00', rowIndex: 10 },
-  { label: '16:00', rowIndex: 11 },
-  { label: '17:00', rowIndex: 12 },
-  { label: '18:00', rowIndex: 13 },
-  { label: '19:00~', rowIndex: 14 },
+  { label: '08:30', rowIndex: 4, isHalf: true },
+  { label: '09:00', rowIndex: 5 },
+  { label: '09:30', rowIndex: 6, isHalf: true },
+  { label: '10:00', rowIndex: 7 },
+  { label: '10:30', rowIndex: 8, isHalf: true },
+  { label: '11:00', rowIndex: 9 },
+  { label: '11:30', rowIndex: 10, isHalf: true },
+  { label: '12:00', rowIndex: 11 },
+  { label: '12:30', rowIndex: 12, isHalf: true },
+  { label: '13:00', rowIndex: 13 },
+  { label: '13:30', rowIndex: 14, isHalf: true },
+  { label: '14:00', rowIndex: 15 },
+  { label: '14:30', rowIndex: 16, isHalf: true },
+  { label: '15:00', rowIndex: 17 },
+  { label: '15:30', rowIndex: 18, isHalf: true },
+  { label: '16:00', rowIndex: 19 },
+  { label: '16:30', rowIndex: 20, isHalf: true },
+  { label: '17:00', rowIndex: 21 },
+  { label: '17:30', rowIndex: 22, isHalf: true },
+  { label: '18:00', rowIndex: 23 },
+  { label: '18:30', rowIndex: 24, isHalf: true },
+  { label: '19:00~', rowIndex: 25 },
 ];
 
-// Total grid rows (including header row 0): 15 rows
-const TOTAL_ROWS = 15;
+// Total grid rows (including header row 0): 26 rows
+const TOTAL_ROWS = 26;
 
-// Row height in px — must match gridTemplateRows minmax value
-const ROW_HEIGHT_PX = 48;
+// Row height in px — each row = 30 minutes
+const ROW_HEIGHT_PX = 32;
 
 /** Check if two dates are on the same calendar day */
 function isSameDay(a: Date, b: Date): boolean {
@@ -94,18 +106,22 @@ export interface CellPlacement {
   rowSpan: number;
 }
 
-export function hourToRow(hour: number): number {
+export function hourToRow(hour: number, minute: number = 0): number {
   if (hour < 8) return 2;
-  if (hour >= 19) return 14;
-  return hour - 8 + 3; // 08 → 3, 09 → 4, ..., 18 → 13
+  if (hour >= 19) return 25;
+  return (hour - 8) * 2 + 3 + (minute >= 30 ? 1 : 0);
+  // 08:00→3, 08:30→4, 09:00→5, ..., 18:00→23, 18:30→24
 }
 
-/** Convert rowIndex back to hour for use in datetime construction */
-function rowToHour(rowIndex: number): number | undefined {
+/** Convert rowIndex back to { hour, minute } for datetime construction */
+function rowToTime(rowIndex: number): { hour: number; minute: number } | undefined {
   if (rowIndex === 1) return undefined; // 종일
-  if (rowIndex === 2) return 7;
-  if (rowIndex >= 3 && rowIndex <= 13) return rowIndex - 3 + 8; // 3→8, 13→18
-  if (rowIndex === 14) return 19;
+  if (rowIndex === 2) return { hour: 7, minute: 0 };
+  if (rowIndex >= 3 && rowIndex <= 24) {
+    const idx = rowIndex - 3;
+    return { hour: Math.floor(idx / 2) + 8, minute: (idx % 2) * 30 };
+  }
+  if (rowIndex === 25) return { hour: 19, minute: 0 };
   return undefined;
 }
 
@@ -128,17 +144,15 @@ export function taskToCell(task: PersonalTask, sunday: Date, saturday: Date): Ce
     const col = getDayCol(scheduled);
     if (col !== null) {
       if (hasTime(task.scheduledDate)) {
-        const scheduledHour = scheduled.getHours();
-        const rowStart = hourToRow(scheduledHour);
+        const rowStart = hourToRow(scheduled.getHours(), scheduled.getMinutes());
 
         // Calculate rowSpan if dueDate is on the same day with time
         let rowSpan = 1;
         if (task.dueDate && hasTime(task.dueDate)) {
           const due = new Date(task.dueDate);
           if (isSameDay(scheduled, due)) {
-            const dueHour = due.getHours();
-            const dueRow = hourToRow(dueHour);
-            rowSpan = Math.max(1, dueRow - rowStart + 1);
+            const dueRow = hourToRow(due.getHours(), due.getMinutes());
+            rowSpan = Math.max(1, dueRow - rowStart);
           }
         }
         return { col, rowStart, rowSpan };
@@ -182,8 +196,8 @@ function clampMinutes(totalMinutes: number): number {
   return Math.max(0, Math.min(23 * 60 + 30, totalMinutes));
 }
 
-/** Half-row unit in px for 30-minute DnD snapping */
-const HALF_ROW_PX = ROW_HEIGHT_PX / 2;
+/** Minimum card height during resize */
+const MIN_RESIZE_HEIGHT = ROW_HEIGHT_PX - 8;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DroppableCell component
@@ -259,6 +273,8 @@ export default function WeeklyTimeGrid({
 
   // Track the active drag id for DragOverlay (card moves only, not resize)
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  // Capture original card dimensions for DragOverlay sizing
+  const [activeDragRect, setActiveDragRect] = useState<{ width: number; height: number }>({ width: 120, height: 40 });
 
   // Find the task being dragged (for overlay rendering)
   const activeTask = useMemo(() => {
@@ -307,7 +323,7 @@ export default function WeeklyTimeGrid({
         return;
       }
 
-      const deltaSteps = Math.round(state.deltaY / HALF_ROW_PX);
+      const deltaSteps = Math.round(state.deltaY / ROW_HEIGHT_PX);
       if (deltaSteps !== 0) {
         const scheduled = new Date(task.scheduledDate);
 
@@ -396,27 +412,22 @@ export default function WeeklyTimeGrid({
     if (!onClickEmptyDate || col === 8) return;
     const dayIndex = col - 1; // col 1 = dayIndex 0 = Sunday
     const date = getDayDate(sunday, dayIndex);
-
-    // Derive hour from rowIndex
-    let hour: number | undefined;
-    if (rowIndex === 1) {
-      // 종일 — no hour
-      hour = undefined;
-    } else if (rowIndex === 2) {
-      // ~07:59
-      hour = 8;
-    } else if (rowIndex >= 3 && rowIndex <= 13) {
-      hour = rowIndex - 3 + 8; // row 3 → 8, row 13 → 18
-    } else if (rowIndex === 14) {
-      hour = 19;
-    }
-    onClickEmptyDate(date, hour);
+    const time = rowToTime(rowIndex);
+    onClickEmptyDate(date, time?.hour);
   };
 
   // ── DnD handlers ──────────────────────────────────────────────────────────
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveDragId(String(event.active.id));
+    const id = String(event.active.id);
+    setActiveDragId(id);
+    // Capture original card dimensions for DragOverlay
+    const taskId = id.replace('task-', '');
+    const el = document.querySelector(`[data-dnd-card="${taskId}"]`);
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      setActiveDragRect({ width: rect.width, height: rect.height });
+    }
   };
 
   const handleDragOver = (_event: DragOverEvent) => {
@@ -435,31 +446,36 @@ export default function WeeklyTimeGrid({
     if (activeId.startsWith('task-')) {
       if (!over) return;
       const taskId = activeId.slice('task-'.length);
+      const task = tasks.find((t) => t.id === taskId);
       const overId = String(over.id);
       const cell = parseCellId(overId);
       if (!cell) return;
 
       const { col, rowIndex } = cell;
-      const dayIndex = col - 2; // col 2 = dayIndex 0 = Sunday, col 3 = dayIndex 1 = Monday
+      const dayIndex = col - 2; // col 2 = dayIndex 0 = Sunday
       const targetDate = getDayDate(sunday, dayIndex);
-      const hour = rowToHour(rowIndex);
+      const time = rowToTime(rowIndex);
 
-      // Determine 30-min offset: check pointer position within the cell
-      let minutes = 0;
-      if (hour !== undefined && over.rect) {
-        const pointerY = (event.activatorEvent as PointerEvent).clientY + delta.y;
-        const cellMidY = over.rect.top + over.rect.height / 2;
-        if (pointerY > cellMidY) {
-          minutes = 30;
+      const dto: UpdatePersonalTaskDto = {
+        scheduledDate: buildDatetime(targetDate, time?.hour, time?.minute ?? 0),
+      };
+
+      // Preserve duration: if task had both scheduledDate and dueDate with time
+      if (
+        time !== undefined &&
+        task?.scheduledDate && hasTime(task.scheduledDate) &&
+        task?.dueDate && hasTime(task.dueDate)
+      ) {
+        const origDurationMs = new Date(task.dueDate).getTime() - new Date(task.scheduledDate).getTime();
+        if (origDurationMs > 0) {
+          const newScheduled = new Date(dto.scheduledDate!);
+          const newDue = new Date(newScheduled.getTime() + origDurationMs);
+          dto.dueDate = newDue.toISOString();
         }
       }
 
-      const dto: UpdatePersonalTaskDto = {
-        scheduledDate: buildDatetime(targetDate, hour, minutes),
-      };
-
-      // If moving to 종일, clear dueDate time component (keep date only)
-      if (hour === undefined) {
+      // If moving to 종일, clear dueDate
+      if (time === undefined) {
         dto.dueDate = null;
       }
 
@@ -548,10 +564,14 @@ export default function WeeklyTimeGrid({
             </span>
           </div>
 
-          {/* ── Rows 1-14: Time rows ── */}
-          {TIME_ROWS.map(({ label, rowIndex }) => {
+          {/* ── Rows 1-25: Time rows (30-min intervals) ── */}
+          {TIME_ROWS.map(({ label, rowIndex, isHalf }) => {
             const gridRow = rowIndex + 1; // CSS grid row (1-based, row 0 is header)
-            const isAlt = rowIndex % 2 === 0;
+            // Alternate background: group by hour (every 2 rows)
+            const isAlt = rowIndex >= 3 ? Math.floor((rowIndex - 3) / 2) % 2 === 1 : rowIndex % 2 === 0;
+            const borderBottomStyle = isHalf
+              ? '1px dashed var(--gray-border)'
+              : '1px solid var(--gray-border)';
 
             return (
               <React.Fragment key={`row-${rowIndex}`}>
@@ -562,16 +582,20 @@ export default function WeeklyTimeGrid({
                     gridColumn: 1,
                     backgroundColor: isAlt ? 'var(--row-alt)' : 'var(--white, #fff)',
                     borderRight: '1px solid var(--gray-border)',
-                    borderBottom: '1px solid var(--gray-border)',
-                    padding: '4px 6px',
+                    borderBottom: borderBottomStyle,
+                    padding: '2px 6px',
                     display: 'flex',
                     alignItems: 'flex-start',
                     justifyContent: 'flex-end',
                   }}
                 >
                   <span
-                    className="text-[10px]"
-                    style={{ color: 'var(--text-sub)', whiteSpace: 'nowrap' }}
+                    style={{
+                      fontSize: isHalf ? '9px' : '10px',
+                      color: 'var(--text-sub)',
+                      opacity: isHalf ? 0.5 : 1,
+                      whiteSpace: 'nowrap',
+                    }}
                   >
                     {label}
                   </span>
@@ -600,7 +624,7 @@ export default function WeeklyTimeGrid({
                           : 'var(--white, #fff)'
                       }
                       borderRight="1px solid var(--gray-border)"
-                      borderBottom="1px solid var(--gray-border)"
+                      borderBottom={borderBottomStyle}
                       borderLeft={todayCol ? '1px solid var(--primary)' : undefined}
                       onClick={
                         onClickEmptyDate
@@ -617,14 +641,14 @@ export default function WeeklyTimeGrid({
                         const isTimed = task.scheduledDate != null && hasTime(task.scheduledDate);
 
                         // Compute real-time height during resize
-                        let wrapperHeight = span * ROW_HEIGHT_PX - 8;
-                        let wrapperTop = 3;
+                        let wrapperHeight = span * ROW_HEIGHT_PX - 4;
+                        let wrapperTop = 2;
                         if (resizeState?.taskId === task.id) {
                           if (resizeState.type === 'bottom') {
-                            wrapperHeight = Math.max(ROW_HEIGHT_PX / 2, wrapperHeight + resizeState.deltaY);
+                            wrapperHeight = Math.max(MIN_RESIZE_HEIGHT, wrapperHeight + resizeState.deltaY);
                           } else {
-                            wrapperHeight = Math.max(ROW_HEIGHT_PX / 2, wrapperHeight - resizeState.deltaY);
-                            wrapperTop = 3 + resizeState.deltaY;
+                            wrapperHeight = Math.max(MIN_RESIZE_HEIGHT, wrapperHeight - resizeState.deltaY);
+                            wrapperTop = 2 + resizeState.deltaY;
                           }
                         }
 
@@ -664,10 +688,10 @@ export default function WeeklyTimeGrid({
             );
           })}
 
-          {/* 일정미지정 column: spans all time rows (rows 2-15 in CSS grid) */}
+          {/* 일정미지정 column: spans all time rows (rows 2-27 in CSS grid) */}
           <div
             style={{
-              gridRow: '2 / 16',
+              gridRow: '2 / 27',
               gridColumn: 9,
               backgroundColor: 'var(--warn-bg)',
               borderBottom: '1px solid var(--gray-border)',
@@ -702,7 +726,7 @@ export default function WeeklyTimeGrid({
       {/* DragOverlay — rendered outside the grid scroll container */}
       <DragOverlay dropAnimation={null}>
         {activeTask ? (
-          <div style={{ width: 120, opacity: 0.85 }}>
+          <div style={{ width: activeDragRect.width, height: activeDragRect.height, opacity: 0.85 }}>
             <WeeklyGridCard
               task={activeTask}
               isSelected={false}
