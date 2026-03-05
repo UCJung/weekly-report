@@ -5,8 +5,8 @@
 
 | TASK | Title | Depends | Status | Commit | Note |
 |------|-------|---------|--------|--------|------|
-| WORK-27-TASK-01 | DnD 날짜 오프바이원 + 리사이즈 핸들 + 일정미지정 | — | Done | | |
-| WORK-27-TASK-02 | 리사이즈/드래그 충돌 해소 + 30분 단위 시간 처리 | TASK-01 | Done | | |
+| WORK-27-TASK-01 | DnD 날짜 오프바이원 + 리사이즈 핸들 + 일정미지정 | — | Done | 0692aff | |
+| WORK-27-TASK-02 | 리사이즈/드래그 충돌 해소 + 30분 단위 시간 처리 | TASK-01 | Done | 92688aa | |
 
 ## Log
 
