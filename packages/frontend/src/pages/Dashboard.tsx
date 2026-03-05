@@ -26,6 +26,7 @@ import {
   TIMESHEET_STATUS_VARIANT,
 } from '../constants/labels';
 import { useTeamMembersStatus } from '../hooks/useTimesheet';
+import { usePersonalTaskSummary } from '../hooks/usePersonalTasks';
 
 const SUMMARY_STATUS_VARIANT: Record<string, 'ok' | 'warn' | 'gray'> = {
   SUBMITTED: 'ok',
@@ -114,6 +115,9 @@ export default function Dashboard() {
   const isLeader = user?.roles.includes('LEADER') ?? false;
   const isPartLeader = user?.roles.includes('PART_LEADER') ?? false;
   const teamId = currentTeamId ?? user?.teamId ?? '';
+
+  // 개인 작업 요약
+  const { data: taskSummary } = usePersonalTaskSummary(teamId || undefined);
 
   // PART_LEADER의 파트 ID는 TeamMembership에서 조회
   const { data: teamMembers = [] } = useQuery({
@@ -348,6 +352,63 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* ─── 내 작업 현황 위젯 ─── */}
+      <div className="mb-4">
+        <p className="text-[12px] font-semibold mb-2" style={{ color: 'var(--text-sub)' }}>
+          내 작업 현황
+        </p>
+        <div className="grid grid-cols-4" style={{ gap: '12px' }}>
+          <div
+            className="cursor-pointer"
+            onClick={() => navigate('/my-tasks?period=today')}
+          >
+            <SummaryCard
+              icon="📋"
+              label="오늘 할 작업"
+              value={taskSummary?.todayCount ?? 0}
+              subText="건"
+              iconBg="var(--primary-bg)"
+            />
+          </div>
+          <div
+            className="cursor-pointer"
+            onClick={() => navigate('/my-tasks?period=this-week')}
+          >
+            <SummaryCard
+              icon="⏰"
+              label="마감 임박"
+              value={taskSummary?.dueSoonCount ?? 0}
+              subText="3일 이내"
+              iconBg="var(--warn-bg)"
+            />
+          </div>
+          <div
+            className="cursor-pointer"
+            onClick={() => navigate('/my-tasks')}
+          >
+            <SummaryCard
+              icon="✅"
+              label="이번 주 완료"
+              value={taskSummary?.thisWeekDoneCount ?? 0}
+              subText="건"
+              iconBg="var(--ok-bg)"
+            />
+          </div>
+          <div
+            className="cursor-pointer"
+            onClick={() => navigate('/my-tasks?period=overdue')}
+          >
+            <SummaryCard
+              icon="🚨"
+              label="마감 지남"
+              value={taskSummary?.overdueCount ?? 0}
+              subText={taskSummary?.overdueCount ? '처리 필요' : '없음'}
+              iconBg="var(--danger-bg)"
+            />
+          </div>
+        </div>
+      </div>
 
       {/* ─── 주간업무보고 콘텐츠 ─── */}
       {viewMode === 'weekly' && (isLeader || isPartLeader) && filteredWeeklyMembers.length > 0 && (

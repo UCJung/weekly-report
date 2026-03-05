@@ -65,6 +65,17 @@ export interface ReorderPersonalTasksDto {
   items: { id: string; sortOrder: number }[];
 }
 
+export interface ImportToWeeklyReportDto {
+  taskIds: string[];
+  weekLabel: string;
+  teamId: string;
+}
+
+export interface ImportToWeeklyReportResult {
+  imported: number;
+  message: string;
+}
+
 export const personalTaskApi = {
   getPersonalTasks: (params: ListPersonalTasksParams) =>
     apiClient.get<{ data: PersonalTask[] }>('/personal-tasks', { params }),
@@ -86,4 +97,7 @@ export const personalTaskApi = {
 
   getPersonalTaskSummary: (teamId: string) =>
     apiClient.get<{ data: PersonalTaskSummary }>('/personal-tasks/summary', { params: { teamId } }),
+
+  importToWeeklyReport: (dto: ImportToWeeklyReportDto) =>
+    apiClient.post<{ data: ImportToWeeklyReportResult }>('/personal-tasks/import-to-weekly', dto),
 };

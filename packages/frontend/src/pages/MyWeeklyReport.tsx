@@ -1,6 +1,9 @@
 import React, { useState, useMemo } from 'react';
+import { CheckSquare } from 'lucide-react';
 import { useUiStore } from '../stores/uiStore';
 import { useGridStore } from '../stores/gridStore';
+import { useTeamStore } from '../stores/teamStore';
+import ImportFromTasksModal from '../components/personal-task/ImportFromTasksModal';
 import {
   useMyWeeklyReport,
   useCreateWeeklyReport,
@@ -28,9 +31,11 @@ export default function MyWeeklyReport() {
   const [carryForwardOpen, setCarryForwardOpen] = useState(false);
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [projectSelectOpen, setProjectSelectOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [selectedPrevIds, setSelectedPrevIds] = useState<string[]>([]);
   const { addToast } = useUiStore();
   const { isSaving } = useGridStore();
+  const { currentTeamId } = useTeamStore();
 
   const prevWeek = addWeeks(currentWeek, -1);
 
@@ -233,6 +238,14 @@ export default function MyWeeklyReport() {
               >
                 전주 불러오기
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => setImportModalOpen(true)}
+                title="내 작업에서 가져오기"
+              >
+                <CheckSquare size={14} className="mr-1" />
+                내 작업에서 가져오기
+              </Button>
               <Button variant="outline" onClick={() => addToast('info', '임시저장되었습니다.')}>
                 임시저장
               </Button>
@@ -392,6 +405,14 @@ export default function MyWeeklyReport() {
         title="주간업무 제출"
         message="주간업무를 제출하시겠습니까? 빈 항목은 자동으로 제거되며, 제출 후에는 재편집 버튼으로만 수정할 수 있습니다."
         confirmLabel="제출"
+      />
+
+      {/* 내 작업에서 가져오기 모달 */}
+      <ImportFromTasksModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        weekLabel={currentWeek}
+        teamId={currentTeamId ?? ''}
       />
     </div>
   );
