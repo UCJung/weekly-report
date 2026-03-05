@@ -8,7 +8,7 @@
 | WORK-26-TASK-00 | DB 스키마 마이그레이션 — 시간 포함 DateTime으로 전환 | — | Done | | |
 | WORK-26-TASK-01 | 백엔드 DTO/Service API — 시간 포함 날짜 처리 | TASK-00 | Done | 5584b19 | |
 | WORK-26-TASK-02 | 주간뷰 시간 그리드 기반 레이아웃 구현 | TASK-00 | Done | 06c99d9 | |
-| WORK-26-TASK-03 | 프론트엔드 API 타입 + 상세 패널 시간 입력 UI | TASK-01 | Done | a8b3c0f | |
+| WORK-26-TASK-03 | 프론트엔드 API 타입 + 상세 패널 시간 입력 UI | TASK-01 | Done | a0ce784 | |
 | WORK-26-TASK-04 | DnD 카드 이동 + 상단/하단 리사이즈 | TASK-02, TASK-03 | Pending | | |
 | WORK-26-TASK-05 | 통합 검증 + 테스트 | TASK-04 | Pending | | |
 
