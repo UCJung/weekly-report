@@ -8,7 +8,7 @@
 | WORK-27-TASK-01 | DnD 날짜 오프바이원 + 리사이즈 핸들 + 일정미지정 | — | Done | 0692aff | |
 | WORK-27-TASK-02 | 리사이즈/드래그 충돌 해소 + 30분 단위 시간 처리 | TASK-01 | Done | 92688aa | |
 | WORK-27-TASK-03 | 리사이즈 네이티브 포인터 전환 + 실시간 시각 피드백 | TASK-02 | Done | 6ced2d0 | |
-| WORK-27-TASK-04 | 30분 행 단위 전환 + 이동 소요시간 유지 + DragOverlay 크기 | TASK-03 | Done | — | |
+| WORK-27-TASK-04 | 30분 행 단위 전환 + 이동 소요시간 유지 + DragOverlay 크기 | TASK-03 | Done | b91fcf3 | |
 
 ## Log
 
