@@ -28,6 +28,12 @@ export class ListPersonalTasksQueryDto {
   @IsNotEmpty()
   teamId: string;
 
+  // statusId filter: filters by specific TaskStatusDef id
+  // Legacy status filter (TaskStatusFilter) kept for backward compat — TASK-03 will migrate fully
+  @IsOptional()
+  @IsString()
+  statusId?: string;
+
   @IsOptional()
   @IsEnum(TaskStatusFilter)
   status?: TaskStatusFilter;

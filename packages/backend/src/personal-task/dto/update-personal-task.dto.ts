@@ -7,7 +7,7 @@ import {
   IsInt,
   Min,
 } from 'class-validator';
-import { TaskPriority, TaskStatus } from '@prisma/client';
+import { TaskPriority } from '@prisma/client';
 
 export class UpdatePersonalTaskDto {
   @IsOptional()
@@ -38,9 +38,11 @@ export class UpdatePersonalTaskDto {
   @IsString()
   teamId?: string;
 
+  // statusId: TaskStatusDef FK (replaces old TaskStatus enum)
+  // Full migration handled in TASK-03
   @IsOptional()
-  @IsEnum(TaskStatus)
-  status?: TaskStatus;
+  @IsString()
+  statusId?: string;
 
   @IsOptional()
   @IsInt()

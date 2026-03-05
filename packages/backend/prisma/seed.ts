@@ -36,6 +36,31 @@ async function main() {
   });
   console.log(`팀 생성: ${team.name} (${team.id})`);
 
+  // 1-1. 팀 기본 작업 상태(TaskStatusDef) 생성 (없는 경우에만)
+  const existingStatuses = await prisma.taskStatusDef.count({ where: { teamId: team.id } });
+  if (existingStatuses === 0) {
+    const defaultStatuses = [
+      { name: '할일', category: 'BEFORE_START' as const, color: '#6C7A89', sortOrder: 0, isDefault: true },
+      { name: '진행중', category: 'IN_PROGRESS' as const, color: '#6B5CE7', sortOrder: 1, isDefault: true },
+      { name: '완료', category: 'COMPLETED' as const, color: '#27AE60', sortOrder: 2, isDefault: true },
+    ];
+    for (const s of defaultStatuses) {
+      await prisma.taskStatusDef.create({
+        data: {
+          teamId: team.id,
+          name: s.name,
+          category: s.category,
+          color: s.color,
+          sortOrder: s.sortOrder,
+          isDefault: s.isDefault,
+        },
+      });
+    }
+    console.log(`TaskStatusDef 생성: 할일/진행중/완료 (팀: ${team.name})`);
+  } else {
+    console.log(`TaskStatusDef 이미 존재 (${existingStatuses}개) — 스킵`);
+  }
+
   // 2. 파트 생성
   const dxPart = await prisma.part.upsert({
     where: { teamId_name: { teamId: team.id, name: 'DX' } },

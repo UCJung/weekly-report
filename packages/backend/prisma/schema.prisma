@@ -21,6 +21,7 @@ model Team {
   requestedBy      Member?            @relation("TeamRequester", fields: [requestedById], references: [id])
   parts            Part[]
   personalTasks    PersonalTask[]
+  taskStatusDefs   TaskStatusDef[]
   teamProjects     TeamProject[]
   partSummaries    PartSummary[]
   teamMemberships  TeamMembership[]
@@ -407,10 +408,32 @@ model TimesheetApproval {
 
 // ──────────── 개인 작업(PersonalTask) ────────────
 
-enum TaskStatus {
-  TODO
+enum TaskStatusCategory {
+  BEFORE_START
   IN_PROGRESS
-  DONE
+  COMPLETED
+
+  @@map("task_status_category")
+}
+
+model TaskStatusDef {
+  id        String             @id @default(cuid())
+  teamId    String
+  name      String
+  category  TaskStatusCategory
+  color     String             @default("#6B5CE7")
+  sortOrder Int                @default(0)
+  isDefault Boolean            @default(false)
+  isDeleted Boolean            @default(false)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  team          Team           @relation(fields: [teamId], references: [id])
+  personalTasks PersonalTask[]
+
+  @@index([teamId, sortOrder])
+  @@index([teamId, category])
+  @@map("task_status_defs")
 }
 
 enum TaskPriority {
@@ -427,7 +450,7 @@ model PersonalTask {
   memo            String?      @db.Text
   projectId       String?
   priority        TaskPriority @default(MEDIUM)
-  status          TaskStatus   @default(TODO)
+  statusId        String
   dueDate         DateTime?    @db.Date
   sortOrder       Int          @default(0)
   linkedWeekLabel String?
@@ -439,12 +462,13 @@ model PersonalTask {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
-  member  Member   @relation(fields: [memberId], references: [id])
-  team    Team     @relation(fields: [teamId], references: [id])
-  project Project? @relation(fields: [projectId], references: [id])
+  member     Member        @relation(fields: [memberId], references: [id])
+  team       Team          @relation(fields: [teamId], references: [id])
+  project    Project?      @relation(fields: [projectId], references: [id])
+  taskStatus TaskStatusDef @relation(fields: [statusId], references: [id])
 
   @@index([memberId, teamId])
-  @@index([memberId, teamId, status])
+  @@index([memberId, teamId, statusId])
   @@index([memberId, teamId, dueDate])
   @@index([projectId])
   @@map("personal_tasks")
