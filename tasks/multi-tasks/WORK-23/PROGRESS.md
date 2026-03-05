@@ -1,7 +1,7 @@
 # WORK-23 Progress
 
 > WORK: 개인 작업 관리 기능 구현
-> Last updated: 2026-03-05 (TASK-06 Done)
+> Last updated: 2026-03-05
 
 | TASK | Title | Depends | Status | Commit | Note |
 |------|-------|---------|--------|--------|------|
@@ -11,6 +11,7 @@
 | WORK-23-TASK-04 | 프론트엔드 내 작업 페이지 | TASK-02 | Done | edb9d98 | |
 | WORK-23-TASK-05 | 프론트엔드 연동 + 위젯 + 사이드바 | TASK-03, TASK-04 | Done | 4701a0e | |
 | WORK-23-TASK-06 | 통합 검증 + 빌드 정비 | TASK-05 | Done | 9b8da5d | |
+| WORK-23-TASK-07 | 작업 소요시간 기록 + 목록 메모 표시 | TASK-06 | Done | 96c1386 | |
 
 ## Log
 
@@ -20,3 +21,4 @@
 - 2026-03-05: TASK-04 완료 — 프론트엔드 내 작업 페이지 구현 (API 클라이언트, 훅 7개, 페이지, 컴포넌트 5개, App.tsx 라우트)
 - 2026-03-05: TASK-05 완료 — 주간업무 연동 모달 + 대시보드 위젯 + 사이드바 메뉴 추가
 - 2026-03-05: TASK-06 완료 — E2E/단위 테스트 작성 (personal-task.e2e-spec.ts, TaskItem.test.tsx, PartStatus.test.tsx 수정), 전체 빌드 검증
+- 2026-03-05: TASK-07 완료 — 작업 소요시간 기록 (startedAt, elapsedMinutes) + 목록 메모 표시 (TaskItem 미리보기, TaskDetailPanel UI)

@@ -433,6 +433,8 @@ model PersonalTask {
   linkedWeekLabel String?
   repeatConfig    Json?
   completedAt     DateTime?
+  startedAt       DateTime?
+  elapsedMinutes  Int?
   isDeleted       Boolean      @default(false)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt

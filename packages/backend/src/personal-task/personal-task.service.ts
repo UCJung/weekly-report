@@ -151,9 +151,9 @@ export class PersonalTaskService {
   }
 
   async update(id: string, memberId: string, dto: UpdatePersonalTaskDto) {
-    await this.findAndVerifyOwner(id, memberId);
+    const currentTask = await this.findAndVerifyOwner(id, memberId);
 
-    const { dueDate, repeatConfig, ...rest } = dto;
+    const { dueDate, repeatConfig, elapsedMinutes, ...rest } = dto;
 
     const updateData: Prisma.PersonalTaskUpdateInput = { ...rest };
 
@@ -165,6 +165,27 @@ export class PersonalTaskService {
       updateData.repeatConfig = repeatConfig === null
         ? Prisma.JsonNull
         : (repeatConfig as Prisma.InputJsonValue);
+    }
+
+    // 소요시간 수동 입력 처리
+    if (elapsedMinutes !== undefined) {
+      updateData.elapsedMinutes = elapsedMinutes;
+    }
+
+    // 상태 변환에 따른 자동 시간 처리
+    if (dto.status === TaskStatus.IN_PROGRESS) {
+      // IN_PROGRESS 전환 시 startedAt이 없으면 현재 시각 설정
+      if (!currentTask.startedAt) {
+        updateData.startedAt = new Date();
+      }
+    } else if (dto.status === TaskStatus.DONE) {
+      // DONE 전환 시
+      updateData.completedAt = new Date();
+      // 수동 elapsedMinutes 없고 startedAt이 있으면 자동 계산
+      if (elapsedMinutes === undefined && currentTask.startedAt) {
+        const diffMs = Date.now() - currentTask.startedAt.getTime();
+        updateData.elapsedMinutes = Math.max(0, Math.round(diffMs / 60000));
+      }
     }
 
     const task = await this.prisma.personalTask.update({
@@ -197,12 +218,21 @@ export class PersonalTaskService {
     const task = await this.findAndVerifyOwner(id, memberId);
 
     const isDone = task.status === TaskStatus.DONE;
+
+    const updateData: Prisma.PersonalTaskUpdateInput = {
+      status: isDone ? TaskStatus.TODO : TaskStatus.DONE,
+      completedAt: isDone ? null : new Date(),
+    };
+
+    // TODO/IN_PROGRESS → DONE: startedAt이 있으면 elapsedMinutes 자동 계산
+    if (!isDone && task.startedAt) {
+      const diffMs = Date.now() - task.startedAt.getTime();
+      updateData.elapsedMinutes = Math.max(0, Math.round(diffMs / 60000));
+    }
+
     const updated = await this.prisma.personalTask.update({
       where: { id },
-      data: {
-        status: isDone ? TaskStatus.TODO : TaskStatus.DONE,
-        completedAt: isDone ? null : new Date(),
-      },
+      data: updateData,
       include: {
         project: {
           select: { id: true, name: true, code: true, category: true },

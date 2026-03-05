@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Trash2, Calendar, Tag, AlertCircle } from 'lucide-react';
+import { X, Trash2, Calendar, Tag, AlertCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { PersonalTask, TaskStatus, TaskPriority } from '../../api/personal-task.api';
 import {
@@ -37,6 +37,12 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [titleValue, setTitleValue] = useState(task.title);
   const [memoValue, setMemoValue] = useState(task.memo ?? '');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [elapsedHours, setElapsedHours] = useState<number>(() =>
+    task.elapsedMinutes != null ? Math.floor(task.elapsedMinutes / 60) : 0,
+  );
+  const [elapsedMins, setElapsedMins] = useState<number>(() =>
+    task.elapsedMinutes != null ? task.elapsedMinutes % 60 : 0,
+  );
   const titleRef = useRef<HTMLInputElement>(null);
   const memoDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -46,7 +52,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     setMemoValue(task.memo ?? '');
     setIsEditingTitle(false);
     setConfirmDelete(false);
-  }, [task.id]);
+    setElapsedHours(task.elapsedMinutes != null ? Math.floor(task.elapsedMinutes / 60) : 0);
+    setElapsedMins(task.elapsedMinutes != null ? task.elapsedMinutes % 60 : 0);
+  }, [task.id, task.elapsedMinutes]);
 
   useEffect(() => {
     if (isEditingTitle && titleRef.current) {
@@ -76,6 +84,16 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   const handleFieldChange = (field: keyof PersonalTask, value: unknown) => {
     updateMutation.mutate({ id: task.id, dto: { [field]: value } });
+  };
+
+  const handleElapsedSave = () => {
+    const totalMinutes = elapsedHours * 60 + elapsedMins;
+    updateMutation.mutate({ id: task.id, dto: { elapsedMinutes: totalMinutes } });
+  };
+
+  const formatStartedAt = (isoString: string) => {
+    const d = new Date(isoString);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   };
 
   const handleDelete = async () => {
@@ -257,6 +275,59 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               }}
             />
           </div>
+
+          {/* 소요시간 */}
+          {task.status !== 'TODO' && (
+            <div>
+              <label style={labelStyle}>
+                <Clock size={11} className="inline mr-1" />
+                소요시간
+              </label>
+              {task.status === 'DONE' ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    value={elapsedHours}
+                    onChange={(e) => setElapsedHours(Math.max(0, Number(e.target.value)))}
+                    onBlur={handleElapsedSave}
+                    className="w-16 text-center rounded border outline-none"
+                    style={{
+                      fontSize: '12.5px',
+                      padding: '5px 6px',
+                      color: 'var(--text)',
+                      backgroundColor: 'var(--gray-light)',
+                      borderColor: 'var(--gray-border)',
+                    }}
+                  />
+                  <span className="text-[12.5px]" style={{ color: 'var(--text-sub)' }}>시간</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={59}
+                    value={elapsedMins}
+                    onChange={(e) => setElapsedMins(Math.min(59, Math.max(0, Number(e.target.value))))}
+                    onBlur={handleElapsedSave}
+                    className="w-16 text-center rounded border outline-none"
+                    style={{
+                      fontSize: '12.5px',
+                      padding: '5px 6px',
+                      color: 'var(--text)',
+                      backgroundColor: 'var(--gray-light)',
+                      borderColor: 'var(--gray-border)',
+                    }}
+                  />
+                  <span className="text-[12.5px]" style={{ color: 'var(--text-sub)' }}>분</span>
+                </div>
+              ) : task.status === 'IN_PROGRESS' && task.startedAt ? (
+                <div className="text-[12.5px]" style={{ color: 'var(--text-sub)' }}>
+                  진행 중 (시작: {formatStartedAt(task.startedAt)})
+                </div>
+              ) : (
+                <div className="text-[12.5px]" style={{ color: 'var(--text-sub)' }}>—</div>
+              )}
+            </div>
+          )}
 
           {/* Repeat config display */}
           {task.repeatConfig && (

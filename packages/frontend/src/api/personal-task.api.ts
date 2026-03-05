@@ -19,6 +19,8 @@ export interface PersonalTask {
   linkedWeekLabel?: string;
   repeatConfig?: { type: string; dayOfWeek?: number; startDate?: string };
   completedAt?: string;
+  startedAt?: string;
+  elapsedMinutes?: number;
   createdAt: string;
   updatedAt: string;
   project?: { id: string; name: string; code: string };
@@ -59,6 +61,7 @@ export interface UpdatePersonalTaskDto {
   status?: TaskStatus;
   dueDate?: string | null;
   repeatConfig?: { type: string; dayOfWeek?: number; startDate?: string } | null;
+  elapsedMinutes?: number;
 }
 
 export interface ReorderPersonalTasksDto {

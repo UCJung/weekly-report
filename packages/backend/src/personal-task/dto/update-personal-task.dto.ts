@@ -46,4 +46,9 @@ export class UpdatePersonalTaskDto {
   @IsInt()
   @Min(0)
   sortOrder?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  elapsedMinutes?: number;
 }

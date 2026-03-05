@@ -18,6 +18,13 @@ function isOverdue(task: PersonalTask): boolean {
   return new Date(task.dueDate) < new Date();
 }
 
+function formatElapsedTime(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
 function formatDueDate(dueDate: string): string {
   const d = new Date(dueDate);
   const now = new Date();
@@ -106,13 +113,30 @@ export default function TaskItem({ task, isSelected, onSelect, onToggleDone }: T
         )}
       </button>
 
-      {/* Title */}
-      <span
-        className={['flex-1 text-[13px] truncate', isDone ? 'line-through' : ''].join(' ')}
-        style={{ color: isDone ? 'var(--text-sub)' : 'var(--text)' }}
-      >
-        {task.title}
-      </span>
+      {/* Title + Memo preview */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        <span
+          className={['text-[13px] truncate', isDone ? 'line-through' : ''].join(' ')}
+          style={{ color: isDone ? 'var(--text-sub)' : 'var(--text)' }}
+        >
+          {task.title}
+        </span>
+        {task.memo && (
+          <p className="text-[11px] truncate leading-tight" style={{ color: 'var(--text-sub)' }}>
+            {task.memo}
+          </p>
+        )}
+      </div>
+
+      {/* Elapsed time badge */}
+      {isDone && task.elapsedMinutes != null && (
+        <span
+          className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded"
+          style={{ backgroundColor: 'var(--primary-bg)', color: 'var(--primary)' }}
+        >
+          {formatElapsedTime(task.elapsedMinutes)}
+        </span>
+      )}
 
       {/* Project badge */}
       {task.project && (
