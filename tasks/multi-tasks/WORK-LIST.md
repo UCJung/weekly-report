@@ -1,6 +1,6 @@
 # WORK 목록 (Master List)
 
-> 최종 갱신: 2026-03-05 (WORK-25 생성)
+> 최종 갱신: 2026-03-05 (WORK-25 완료)
 > 갱신 시점: git push 시 진행중인 WORK를 완료로 갱신
 
 | WORK | 제목 | 상태 | 비고 |
@@ -29,4 +29,4 @@
 | WORK-22 | Member.partId 이중 관리 제거 - TeamMembership 기반 단일화 | COMPLETED | |
 | WORK-23 | 개인 작업 관리 기능 구현 (Require-09) | COMPLETED | |
 | WORK-24 | 팀별 작업 상태 커스텀 관리 | COMPLETED | |
-| WORK-25 | 주간뷰 예정일 기반 작업 배치 + UX 개선 | IN_PROGRESS | |
+| WORK-25 | 주간뷰 예정일 기반 작업 배치 + UX 개선 | COMPLETED | |
