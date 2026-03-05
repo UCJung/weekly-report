@@ -140,9 +140,7 @@ export default function WeeklyGridCard({
         position: 'relative',
         touchAction: 'none',
       }}
-      className="rounded cursor-grab transition-all px-1.5 py-1 w-full overflow-hidden"
-      {...(isOverlay ? {} : attributes)}
-      {...(isOverlay ? {} : listeners)}
+      className="rounded transition-all w-full overflow-hidden"
       onClick={(e) => {
         if (isDragging) return;
         e.stopPropagation();
@@ -154,32 +152,39 @@ export default function WeeklyGridCard({
     >
       {showResizeHandles && !isOverlay && <ResizeTopHandle taskId={task.id} />}
 
-      {timeStr && (
-        <p
-          className="leading-none mb-0.5"
-          style={{ fontSize: '9px', color: 'var(--text-sub)' }}
-        >
-          {timeStr}
-        </p>
-      )}
-      <p
-        className="font-semibold leading-snug truncate"
-        style={{
-          fontSize: '10px',
-          color: isDone ? 'var(--text-sub)' : 'var(--text)',
-          textDecoration: isDone ? 'line-through' : undefined,
-        }}
+      {/* Inner content area — drag listeners here only (separate from resize handles) */}
+      <div
+        className="cursor-grab px-1.5 py-1"
+        {...(isOverlay ? {} : attributes)}
+        {...(isOverlay ? {} : listeners)}
       >
-        {task.title}
-      </p>
-      {task.project && (
+        {timeStr && (
+          <p
+            className="leading-none mb-0.5"
+            style={{ fontSize: '9px', color: 'var(--text-sub)' }}
+          >
+            {timeStr}
+          </p>
+        )}
         <p
-          className="truncate mt-0.5 leading-none"
-          style={{ fontSize: '9px', color: 'var(--primary)' }}
+          className="font-semibold leading-snug truncate"
+          style={{
+            fontSize: '10px',
+            color: isDone ? 'var(--text-sub)' : 'var(--text)',
+            textDecoration: isDone ? 'line-through' : undefined,
+          }}
         >
-          {task.project.name}
+          {task.title}
         </p>
-      )}
+        {task.project && (
+          <p
+            className="truncate mt-0.5 leading-none"
+            style={{ fontSize: '9px', color: 'var(--primary)' }}
+          >
+            {task.project.name}
+          </p>
+        )}
+      </div>
 
       {showResizeHandles && !isOverlay && <ResizeBottomHandle taskId={task.id} />}
     </div>

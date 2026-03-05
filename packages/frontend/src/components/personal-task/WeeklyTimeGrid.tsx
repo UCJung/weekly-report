@@ -163,8 +163,8 @@ function parseCellId(id: string): { col: number; rowIndex: number } | null {
   return { col: parseInt(match[1], 10), rowIndex: parseInt(match[2], 10) };
 }
 
-/** Build an ISO datetime string or date-only string from a date + optional hour */
-function buildDatetime(date: Date, hour: number | undefined): string {
+/** Build an ISO datetime string from a date + optional hour + minutes */
+function buildDatetime(date: Date, hour: number | undefined, minutes = 0): string {
   if (hour === undefined) {
     // Date only (종일)
     const y = date.getFullYear();
@@ -173,14 +173,17 @@ function buildDatetime(date: Date, hour: number | undefined): string {
     return `${y}-${m}-${d}T00:00:00.000Z`;
   }
   const result = new Date(date);
-  result.setHours(hour, 0, 0, 0);
+  result.setHours(hour, minutes, 0, 0);
   return result.toISOString();
 }
 
-/** Clamp hour to valid range [0, 23] */
-function clampHour(h: number): number {
-  return Math.max(0, Math.min(23, h));
+/** Clamp minutes to valid range [0, 23*60+30] and snap to 30-min */
+function clampMinutes(totalMinutes: number): number {
+  return Math.max(0, Math.min(23 * 60 + 30, totalMinutes));
 }
+
+/** Half-row unit in px for 30-minute DnD snapping */
+const HALF_ROW_PX = ROW_HEIGHT_PX / 2;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DroppableCell component
@@ -353,8 +356,18 @@ export default function WeeklyTimeGrid({
       const targetDate = getDayDate(sunday, dayIndex);
       const hour = rowToHour(rowIndex);
 
+      // Determine 30-min offset: check pointer position within the cell
+      let minutes = 0;
+      if (hour !== undefined && over.rect) {
+        const pointerY = (event.activatorEvent as PointerEvent).clientY + delta.y;
+        const cellMidY = over.rect.top + over.rect.height / 2;
+        if (pointerY > cellMidY) {
+          minutes = 30;
+        }
+      }
+
       const dto: UpdatePersonalTaskDto = {
-        scheduledDate: buildDatetime(targetDate, hour),
+        scheduledDate: buildDatetime(targetDate, hour, minutes),
       };
 
       // If moving to 종일, clear dueDate time component (keep date only)
@@ -366,57 +379,58 @@ export default function WeeklyTimeGrid({
       return;
     }
 
-    // ── Resize top (scheduledDate time change) ──────────────────────
+    // ── Resize top (scheduledDate time change — 30min steps) ───────
     if (activeId.startsWith('resize-top-')) {
       const taskId = activeId.slice('resize-top-'.length);
       const task = tasks.find((t) => t.id === taskId);
       if (!task || !task.scheduledDate) return;
 
-      const deltaRows = Math.round(delta.y / ROW_HEIGHT_PX);
-      if (deltaRows === 0) return;
+      const deltaSteps = Math.round(delta.y / HALF_ROW_PX);
+      if (deltaSteps === 0) return;
 
       const scheduled = new Date(task.scheduledDate);
-      const currentHour = scheduled.getHours();
-      const newHour = clampHour(currentHour + deltaRows);
+      const currentMinutes = scheduled.getHours() * 60 + scheduled.getMinutes();
+      const newTotalMinutes = clampMinutes(currentMinutes + deltaSteps * 30);
 
-      // Constraint: scheduledDate must not be >= dueDate
+      // Constraint: scheduledDate must be < dueDate (at least 30min gap)
       if (task.dueDate && hasTime(task.dueDate)) {
-        const dueHour = new Date(task.dueDate).getHours();
-        if (newHour >= dueHour) return; // refuse invalid resize
+        const due = new Date(task.dueDate);
+        const dueMinutes = due.getHours() * 60 + due.getMinutes();
+        if (newTotalMinutes >= dueMinutes) return;
       }
 
       const newScheduled = new Date(scheduled);
-      newScheduled.setHours(newHour, 0, 0, 0);
+      newScheduled.setHours(Math.floor(newTotalMinutes / 60), newTotalMinutes % 60, 0, 0);
 
       onUpdateTask(taskId, { scheduledDate: newScheduled.toISOString() });
       return;
     }
 
-    // ── Resize bottom (dueDate time change) ────────────────────────
+    // ── Resize bottom (dueDate time change — 30min steps) ────────
     if (activeId.startsWith('resize-bottom-')) {
       const taskId = activeId.slice('resize-bottom-'.length);
       const task = tasks.find((t) => t.id === taskId);
       if (!task || !task.scheduledDate) return;
 
-      const deltaRows = Math.round(delta.y / ROW_HEIGHT_PX);
-      if (deltaRows === 0) return;
+      const deltaSteps = Math.round(delta.y / HALF_ROW_PX);
+      if (deltaSteps === 0) return;
 
       const scheduled = new Date(task.scheduledDate);
-      const scheduledHour = scheduled.getHours();
+      const scheduledMinutes = scheduled.getHours() * 60 + scheduled.getMinutes();
 
-      // Current dueDate or scheduledDate + 1 hour as baseline
+      // Current dueDate or scheduledDate + 30min as baseline
       const baseDue = task.dueDate && hasTime(task.dueDate)
         ? new Date(task.dueDate)
-        : (() => { const d = new Date(scheduled); d.setHours(scheduledHour + 1, 0, 0, 0); return d; })();
+        : (() => { const d = new Date(scheduled); d.setMinutes(d.getMinutes() + 30); return d; })();
 
-      const currentDueHour = baseDue.getHours();
-      const newDueHour = clampHour(currentDueHour + deltaRows);
+      const currentDueMinutes = baseDue.getHours() * 60 + baseDue.getMinutes();
+      const newDueMinutes = clampMinutes(currentDueMinutes + deltaSteps * 30);
 
-      // Constraint: dueDate must be at least scheduledDate + 1 hour
-      if (newDueHour <= scheduledHour) return;
+      // Constraint: dueDate must be at least scheduledDate + 30min
+      if (newDueMinutes <= scheduledMinutes) return;
 
       const newDue = new Date(scheduled);
-      newDue.setHours(newDueHour, 0, 0, 0);
+      newDue.setHours(Math.floor(newDueMinutes / 60), newDueMinutes % 60, 0, 0);
 
       onUpdateTask(taskId, { dueDate: newDue.toISOString() });
       return;

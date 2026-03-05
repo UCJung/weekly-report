@@ -346,6 +346,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               />
               <input
                 type="time"
+                step="1800"
                 value={dueTimeStr}
                 onChange={(e) => {
                   const newTime = e.target.value;
@@ -417,6 +418,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               />
               <input
                 type="time"
+                step="1800"
                 value={scheduledTimeStr}
                 onChange={(e) => {
                   const newTime = e.target.value;
