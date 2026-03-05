@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, test, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -8,9 +8,35 @@ import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../stores/authStore', () => ({
   useAuthStore: () => ({
-    user: { id: 'u1', name: '최수진', roles: ['PART_LEADER'], partId: 'p1', partName: 'DX', teamId: 't1' },
+    user: { id: 'u1', name: '최수진', roles: ['PART_LEADER'], teamId: 't1' },
     isAuthenticated: () => true,
   }),
+}));
+
+vi.mock('../stores/teamStore', () => ({
+  useTeamStore: () => ({
+    currentTeamId: 't1',
+  }),
+}));
+
+// PART_LEADER 사용자의 파트 정보는 teamApi.getMembers에서 조회됨
+vi.mock('../api/team.api', () => ({
+  teamApi: {
+    getMembers: vi.fn().mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 'u1',
+            name: '최수진',
+            roles: ['PART_LEADER'],
+            partId: 'p1',
+            partName: 'DX',
+          },
+        ],
+      },
+    }),
+    getParts: vi.fn().mockResolvedValue({ data: { data: [] } }),
+  },
 }));
 
 import PartStatus from './PartStatus';
@@ -53,9 +79,13 @@ describe('PartStatus', () => {
     expect(screen.getByText('팀원별')).toBeDefined();
   });
 
-  test('shows part name for non-leader user', () => {
+  test('shows part name for non-leader user', async () => {
     render(<PartStatus />, { wrapper: createWrapper() });
-    expect(screen.getByText('DX')).toBeDefined();
+    // PART_LEADER는 파트 선택 드롭다운 대신 파트명 스팬을 렌더링함.
+    // teamApi.getMembers가 resolve되면 userPartName = 'DX'가 스팬에 표시됨.
+    await waitFor(() => {
+      expect(screen.getByText('DX')).toBeDefined();
+    });
   });
 
   test('renders task status section title', () => {
