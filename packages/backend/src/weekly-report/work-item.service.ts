@@ -5,6 +5,7 @@ import { BusinessException } from '../common/filters/business-exception';
 import { CreateWorkItemDto } from './dto/create-work-item.dto';
 import { UpdateWorkItemDto } from './dto/update-work-item.dto';
 import { ReorderWorkItemsDto } from './dto/reorder-work-items.dto';
+import { ApplyTasksDto } from './dto/apply-tasks.dto';
 import { getWeekRange } from '@uc-teamspace/shared/constants/week-utils';
 
 @Injectable()
@@ -291,5 +292,85 @@ export class WorkItemService {
         completedAt: task.completedAt,
       })),
     };
+  }
+
+  async applyTasksToWorkItem(id: string, memberId: string, dto: ApplyTasksDto) {
+    // WorkItem 조회 및 권한 검증
+    const workItem = await this.findWorkItemAndVerify(id, memberId);
+
+    // PersonalTask 조회 (본인 소유 + 미삭제)
+    const tasks = await this.prisma.personalTask.findMany({
+      where: {
+        id: { in: dto.taskIds },
+        memberId,
+        isDeleted: false,
+      },
+      include: {
+        taskStatus: {
+          select: {
+            category: true,
+          },
+        },
+      },
+    });
+
+    // taskIds 순서 보존 (Map 사용)
+    const taskMap = new Map(tasks.map((t) => [t.id, t]));
+    const validTasks = dto.taskIds
+      .map((id) => taskMap.get(id))
+      .filter((task) => task !== undefined) as typeof tasks;
+
+    // 카테고리별 분류
+    const completedTasks = validTasks.filter((t) => t.taskStatus.category === 'COMPLETED');
+    const planningTasks = validTasks.filter(
+      (t) => t.taskStatus.category === 'IN_PROGRESS' || t.taskStatus.category === 'BEFORE_START',
+    );
+
+    // 텍스트 생성 헬퍼
+    const formatTaskText = (tasks: typeof validTasks): string => {
+      return tasks
+        .map((task) => {
+          let text = `*${task.title}`;
+          if (task.memo) {
+            text += `\nㄴ${task.memo}`;
+          }
+          return text;
+        })
+        .join('\n');
+    };
+
+    // doneWork, planWork 생성
+    const doneWorkText = formatTaskText(completedTasks);
+    const planWorkText = formatTaskText(planningTasks);
+
+    // 기존 내용에 추가 또는 교체
+    let updatedDoneWork = workItem.doneWork;
+    let updatedPlanWork = workItem.planWork;
+
+    if (dto.appendMode === 'replace') {
+      updatedDoneWork = doneWorkText;
+      updatedPlanWork = planWorkText;
+    } else if (dto.appendMode === 'append') {
+      if (doneWorkText) {
+        updatedDoneWork = updatedDoneWork
+          ? `${updatedDoneWork}\n${doneWorkText}`
+          : doneWorkText;
+      }
+      if (planWorkText) {
+        updatedPlanWork = updatedPlanWork
+          ? `${updatedPlanWork}\n${planWorkText}`
+          : planWorkText;
+      }
+    }
+
+    // WorkItem 업데이트
+    return this.prisma.workItem.update({
+      where: { id },
+      data: {
+        doneWork: updatedDoneWork,
+        planWork: updatedPlanWork,
+      },
+      include: { project: true },
+    });
   }
 }

@@ -19,6 +19,7 @@ import { UpdateWeeklyReportDto } from './dto/update-weekly-report.dto';
 import { CreateWorkItemDto } from './dto/create-work-item.dto';
 import { UpdateWorkItemDto } from './dto/update-work-item.dto';
 import { ReorderWorkItemsDto } from './dto/reorder-work-items.dto';
+import { ApplyTasksDto } from './dto/apply-tasks.dto';
 import { CarryForwardDto } from './dto/carry-forward.dto';
 
 @Controller('api/v1')
@@ -121,5 +122,14 @@ export class ReportController {
     @CurrentUser('id') memberId: string,
   ) {
     return this.workItemService.getLinkedTasks(id, memberId);
+  }
+
+  @Post('work-items/:id/apply-tasks')
+  async applyTasksToWorkItem(
+    @Param('id') id: string,
+    @CurrentUser('id') memberId: string,
+    @Body() dto: ApplyTasksDto,
+  ) {
+    return this.workItemService.applyTasksToWorkItem(id, memberId, dto);
   }
 }
