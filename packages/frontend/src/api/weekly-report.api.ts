@@ -11,6 +11,34 @@ export interface WorkItem {
   sortOrder: number;
 }
 
+export type TaskPriority = 'HIGH' | 'MEDIUM' | 'LOW';
+
+export interface LinkedTask {
+  id: string;
+  title: string;
+  memo?: string;
+  priority: TaskPriority;
+  statusId: string;
+  taskStatus: { id: string; name: string; category: string; color: string };
+  dueDate?: string;
+  scheduledDate?: string;
+  linkedWeekLabel?: string;
+  completedAt?: string;
+}
+
+export interface LinkedTasksResult {
+  workItemId: string;
+  projectId?: string;
+  weekLabel: string;
+  tasks: LinkedTask[];
+}
+
+export interface ApplyTasksDto {
+  taskIds: string[];
+  appendMode: 'replace' | 'append';
+  teamId: string;
+}
+
 export interface WeeklyReport {
   id: string;
   memberId: string;
@@ -63,4 +91,12 @@ export const weeklyReportApi = {
       targetWeek,
       sourceWorkItemIds,
     }),
+
+  getLinkedTasks: (workItemId: string, teamId: string) =>
+    apiClient.get<{ data: LinkedTasksResult }>(`/work-items/${workItemId}/linked-tasks`, {
+      params: { teamId },
+    }),
+
+  applyTasksToWorkItem: (workItemId: string, dto: ApplyTasksDto) =>
+    apiClient.post<{ data: WorkItem }>(`/work-items/${workItemId}/apply-tasks`, dto),
 };
