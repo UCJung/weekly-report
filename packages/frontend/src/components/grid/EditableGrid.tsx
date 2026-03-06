@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import GridCell from './GridCell';
 import ExpandedEditor from './ExpandedEditor';
+import LinkedTasksPopover from './LinkedTasksPopover';
 import { WorkItem } from '../../api/weekly-report.api';
 import { useGridStore } from '../../stores/gridStore';
 import { ConfirmModal } from '../ui/Modal';
@@ -19,6 +20,8 @@ interface EditableGridProps {
   onAddItem: (projectId: string) => void;
   onDeleteItem: (id: string) => void;
   onDeleteProject: (projectId: string) => void;
+  teamId?: string;
+  weekLabel?: string;
 }
 
 type EditingCell = { rowId: string; column: 'doneWork' | 'planWork' | 'remarks' } | null;
@@ -45,11 +48,16 @@ export default function EditableGrid({
   onAddItem,
   onDeleteItem,
   onDeleteProject,
+  teamId,
+  weekLabel,
 }: EditableGridProps) {
   const [editingCell, setEditingCell] = useState<EditingCell>(null);
   const [expandedCell, setExpandedCell] = useState<EditingCell>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleteProjectTarget, setDeleteProjectTarget] = useState<ProjectGroup | null>(null);
+  const [popoverOpen, setPopoverOpen] = useState<string | null>(null);
+  const popoverRef = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
   const { markDirty } = useGridStore();
 
   // workItems를 projectId 기준으로 그룹핑 (최초 등장 순서 유지)
@@ -94,6 +102,29 @@ export default function EditableGrid({
     },
     [workItems, markDirty, onUpdateItem],
   );
+
+  const handlePopoverOpen = useCallback((itemId: string, btnElement: HTMLElement) => {
+    setPopoverOpen(itemId);
+    const rect = btnElement.getBoundingClientRect();
+    setPopoverPos({
+      top: rect.bottom + 8,
+      left: rect.left - 260,
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (popoverOpen) {
+        const target = e.target as HTMLElement;
+        if (popoverRef.current[popoverOpen]?.contains(target)) return;
+        if ((target.closest('button') as HTMLElement)?.dataset?.popoverTrigger === popoverOpen)
+          return;
+        setPopoverOpen(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [popoverOpen]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -224,72 +255,110 @@ export default function EditableGrid({
                           />
                         </td>
 
-                        {/* 액션 — 케밥 메뉴 (⋮) */}
+                        {/* 액션 — 케밥 메뉴 (⋮) + 연관 작업 버튼 */}
                         <td className="px-2 py-[8px] align-top text-center">
                           {!disabled && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
+                            <div className="flex items-center justify-center gap-1">
+                              {/* 연관 작업 버튼 */}
+                              {item.projectId && (
                                 <button
-                                  className="mt-1.5 w-[26px] h-[26px] flex items-center justify-center rounded transition-colors text-[16px] leading-none"
-                                  style={{ color: 'var(--text-sub)' }}
-                                  title="행 옵션"
-                                  aria-label="행 옵션 메뉴"
+                                  data-popover-trigger={item.id}
+                                  className="mt-1.5 w-[26px] h-[26px] flex items-center justify-center rounded transition-colors text-[14px] leading-none relative"
+                                  style={{
+                                    color: item.projectId
+                                      ? 'var(--text-sub)'
+                                      : 'var(--gray-border)',
+                                  }}
+                                  title="연관 작업"
+                                  aria-label="연관 작업 목록"
+                                  onClick={(e) =>
+                                    handlePopoverOpen(item.id, e.currentTarget)
+                                  }
                                   onMouseEnter={(e) => {
-                                    (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                                      'var(--gray-light)';
-                                    (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)';
+                                    if (item.projectId) {
+                                      (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                                        'var(--gray-light)';
+                                      (e.currentTarget as HTMLButtonElement).style.color =
+                                        'var(--text)';
+                                    }
                                   }}
                                   onMouseLeave={(e) => {
                                     (e.currentTarget as HTMLButtonElement).style.backgroundColor =
                                       'transparent';
                                     (e.currentTarget as HTMLButtonElement).style.color =
-                                      'var(--text-sub)';
+                                      item.projectId ? 'var(--text-sub)' : 'var(--gray-border)';
                                   }}
+                                  disabled={!item.projectId}
                                 >
-                                  ⋮
+                                  ✓
                                 </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onSelect={() => {
-                                    const col: 'doneWork' | 'planWork' | 'remarks' =
-                                      editingCell?.rowId === item.id
-                                        ? editingCell.column
-                                        : 'doneWork';
-                                    setExpandedCell({ rowId: item.id, column: col });
-                                  }}
-                                >
-                                  <span className="mr-1.5">↗</span>
-                                  확대 편집
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onSelect={() => onAddItem(item.projectId ?? '')}
-                                >
-                                  <span className="mr-1.5">+</span>
-                                  업무 추가
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onSelect={() => setDeleteTarget(item.id)}
-                                  className="text-[var(--danger)] hover:bg-[var(--danger-bg)] focus:bg-[var(--danger-bg)]"
-                                >
-                                  <span className="mr-1.5">✕</span>
-                                  행 삭제
-                                </DropdownMenuItem>
-                                {isLastInGroup && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onSelect={() => setDeleteProjectTarget(group)}
-                                      className="text-[var(--danger)] hover:bg-[var(--danger-bg)] focus:bg-[var(--danger-bg)]"
-                                    >
-                                      <span className="mr-1.5">🗑</span>
-                                      프로젝트 제거
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                              )}
+
+                              {/* 옵션 메뉴 */}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    className="mt-1.5 w-[26px] h-[26px] flex items-center justify-center rounded transition-colors text-[16px] leading-none"
+                                    style={{ color: 'var(--text-sub)' }}
+                                    title="행 옵션"
+                                    aria-label="행 옵션 메뉴"
+                                    onMouseEnter={(e) => {
+                                      (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                                        'var(--gray-light)';
+                                      (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                                        'transparent';
+                                      (e.currentTarget as HTMLButtonElement).style.color =
+                                        'var(--text-sub)';
+                                    }}
+                                  >
+                                    ⋮
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onSelect={() => {
+                                      const col: 'doneWork' | 'planWork' | 'remarks' =
+                                        editingCell?.rowId === item.id
+                                          ? editingCell.column
+                                          : 'doneWork';
+                                      setExpandedCell({ rowId: item.id, column: col });
+                                    }}
+                                  >
+                                    <span className="mr-1.5">↗</span>
+                                    확대 편집
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onSelect={() => onAddItem(item.projectId ?? '')}
+                                  >
+                                    <span className="mr-1.5">+</span>
+                                    업무 추가
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onSelect={() => setDeleteTarget(item.id)}
+                                    className="text-[var(--danger)] hover:bg-[var(--danger-bg)] focus:bg-[var(--danger-bg)]"
+                                  >
+                                    <span className="mr-1.5">✕</span>
+                                    행 삭제
+                                  </DropdownMenuItem>
+                                  {isLastInGroup && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onSelect={() => setDeleteProjectTarget(group)}
+                                        className="text-[var(--danger)] hover:bg-[var(--danger-bg)] focus:bg-[var(--danger-bg)]"
+                                      >
+                                        <span className="mr-1.5">🗑</span>
+                                        프로젝트 제거
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -321,6 +390,10 @@ export default function EditableGrid({
                 setExpandedCell(null);
               }}
               onClose={() => setExpandedCell(null)}
+              workItemId={expandedCell.rowId}
+              projectId={item.projectId}
+              teamId={teamId}
+              weekLabel={weekLabel}
             />
           );
         })()}
@@ -352,6 +425,35 @@ export default function EditableGrid({
         confirmLabel="제거"
         danger
       />
+
+      {/* 연관 작업 팝오버 */}
+      {popoverOpen && popoverPos && teamId && weekLabel && (
+        (() => {
+          const item = workItems.find((w) => w.id === popoverOpen);
+          if (!item) return null;
+          return (
+            <div
+              ref={(el) => {
+                if (el) popoverRef.current[popoverOpen] = el;
+              }}
+              className="fixed z-[100]"
+              style={{
+                top: `${popoverPos.top}px`,
+                left: `${popoverPos.left}px`,
+              }}
+            >
+              <LinkedTasksPopover
+                workItemId={popoverOpen}
+                projectName={item.project?.name}
+                weekLabel={weekLabel}
+                teamId={teamId}
+                onApplied={() => setPopoverOpen(null)}
+                onClose={() => setPopoverOpen(null)}
+              />
+            </div>
+          );
+        })()
+      )}
     </div>
   );
 }
